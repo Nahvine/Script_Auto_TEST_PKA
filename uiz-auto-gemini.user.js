@@ -125,7 +125,9 @@
     let raw = localStorage.getItem(LS_KEYS);
     if(!raw){
       const defaults=[
-        "AIzaSyA6P-Ec1aKvBVyUqgZByb515IL_2xOvDqM"
+        "AIzaSyD7VvHT5S-yntEDVL82wgOSsPmYSWuaXs8",
+        "AIzaSyBQJfAFkGRsv_jhL0FP1Sf4eXVfNhoo7Ec",
+        "AIzaSyC5el-uH5Ca6DUbVilo008nahv2pwn3tPw"
       ];
       raw = JSON.stringify(defaults);
       localStorage.setItem(LS_KEYS, raw);
