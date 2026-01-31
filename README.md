@@ -1,43 +1,57 @@
-# Quiz Auto (Gemini) — Tampermonkey Script
+# Canvas Quiz Auto-Solver (Random/Brute-Force)
 
-A Tampermonkey userscript that **auto-answers multiple-choice quizzes** using Google Gemini API.  
-It extracts the question & options from the page, asks Gemini once per question, selects the answer, and clicks **Next**.  
+[🇻🇳 Tiếng Việt (Vietnamese Guide)](./README_VN.md)
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/3e4b201d-0260-4cc2-97ce-c9905bd33897" alt="Quiz Auto Gemini Screenshot" width="470"/>
-</p>
+A robust Userscript designed to automatically solve Canvas quizzes using a "Trial and Error" (Brute-Force) memory approach. It requires **NO AI API keys** and improves its accuracy over time by "harvesting" correct answers from your past attempts.
 
----
+## 🚀 Features
 
-## ✨ Features
-- 🚀 **One API call per question** → cost efficient.  
-- 🔒 **Strict mode** → no random guessing, stops if uncertain.  
-- 🔄 **Multi-key rotation** → switch API keys when quota/limit reached.  
-- ⏱️ **Customizable** → set number of questions & delay per question.  
-- 🖥️ **Floating control panel** → start/stop, key manager, auto-rotate toggle.  
-- 🔁 **Persistent state** → continues across page reloads.  
+*   **Zero Config**: No Gemini/OpenAI API keys needed.
+*   **Memory System**: Remembers correct answers and excludes wrong answers based on text content.
+*   **Random Pick**: Automatically selects a random option for unknown questions (excluding known wrong ones).
+*   **Harvest Mode**: Scans the quiz review/result page to learn from mistakes.
+*   **Auto-Submit**: Automatically submits the quiz when all questions are answered.
+*   **Resilience**: Works through page reloads and network hiccups.
 
----
+## 📥 Installation
 
-## ⚙️ Setup
-1. Install [Tampermonkey](https://www.tampermonkey.net/).  
-2. Add the script (`quiz-auto-gemini.user.js`).  
-3. Open your quiz site → the control panel appears at bottom-right.  
+1.  Install a Userscript manager extension:
+    *   [Tampermonkey](https://www.tampermonkey.net/) (Recommended)
+    *   Violentmonkey
+2.  Create a new script in your manager.
+3.  Copy the entire content of `main.js`.
+4.  Paste it into the editor and save (Ctrl+S).
 
----
+## 🎮 How to Use
 
-## ▶️ Usage
-- **⚙️ Keys** → paste your Gemini API keys (one per line).  
-- **#Q** → number of questions to auto-answer.  
-- **Delay(s)** → wait time before moving to next question.  
-- **Auto-rotate keys** → toggle automatic key switching on quota errors.  
-- **🤖 Start** → begin automation.  
-- **⏹ Stop** → stop automation immediately.  
+### Phase 1: Taking the Quiz
+1.  Navigate to your Canvas Quiz page.
+2.  You will see a control panel in the bottom-right corner.
+3.  **#Q**: Set the total number of questions to answer.
+4.  **Delay(s)**: Set the delay between questions (recommended 2-4 seconds to avoid detection/errors).
+5.  Click **"🤖 Start Loop"**.
+6.  The script will:
+    *   Pick the correct answer if known.
+    *   Pick a random answer if unknown (excluding previously known wrong answers).
+    *   Automatically move to the next question.
+    *   **Auto-Submit** when finished.
 
----
+### Phase 2: Learning (The most important step!)
+1.  After submitting, open the **Submission Details** or **Review** page where the correct/incorrect answers are shown.
+2.  Click the **"📥 Harvest Q/A"** button on the panel.
+3.  The script will analyze the page and save:
+    *   **Right answers**: To select immediately next time.
+    *   **Wrong answers**: To never pick again.
+4.  Repeat the quiz! The accuracy will increase with every attempt until it reaches 100%.
 
-## 📝 Notes
-- Works on standard quiz pages with visible question + multiple-choice answers.  
-- Accuracy depends on Gemini’s domain knowledge.  
-- Recommended: keep multiple valid API keys to avoid interruptions.  
-- Intended for **personal/educational use only**.  
+## ⚙️ Controls
+
+*   **Start Loop**: Begin the auto-answering process.
+*   **Stop**: Pause the script.
+*   **Harvest Q/A**: Click this ON THE REVIEW PAGE to simple the "brain".
+*   **Delete data**: Clear all learned answers (Memory Reset).
+*   **Auto-Submit**: Enabled by default when the question counter reaches 0.
+
+## ⚠️ Note
+*   This method relies on "Trial and Error". The first few attempts will have low scores (random guessing).
+*   Always check "Harvest" after every attempt to improve future performance.
