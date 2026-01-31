@@ -125,11 +125,10 @@
   /* ===== Keys ===== */
   function getKeys() {
     let raw = localStorage.getItem(LS_KEYS);
-    if(!raw){
-      const defaults=[
-        "AIzaSyD7VvHT5S-yntEDVL82wgOSsPmYSWuaXs8",
-        "AIzaSyBQJfAFkGRsv_jhL0FP1Sf4eXVfNhoo7Ec",
-        "AIzaSyC5el-uH5Ca6DUbVilo008nahv2pwn3tPw"
+    if (!raw) {
+      const defaults = [
+        "AIzaSyCxv2B-60pfOuriPZEALRya_yjc6_fx1t8",
+        "AIzaSyCfJdeYvx7P3GHcYO6LedaNZVHMvtlO-oc"
       ];
       raw = JSON.stringify(defaults);
       localStorage.setItem(LS_KEYS, raw);
@@ -231,9 +230,11 @@
     setKeyIndex(next); updateKeyBadge(); return getCurrentKey();
   }
 
-  /* ===== Gemini (robust single call) ===== */
+  /* ===== Gemini (robust single call with Safe Rotation) ===== */
   async function askGemini(question, options) {
-    const cur = getCurrentKey(); if (!cur) throw new Error("Chưa cấu hình API key.");
+    const keys = getKeys();
+    if (!keys.length) throw new Error("Chưa cấu hình API key.");
+
     const sys = [
       "Bạn là AI chuyên giải trắc nghiệm theo giáo trình kinh tế - chính trị VN.",
       "Chỉ chọn đúng 1 phương án TRONG DANH SÁCH đã cho.",
@@ -248,10 +249,13 @@
     ].join("\n");
     const body = { contents: [{ role: "user", parts: [{ text: sys + "\n\n" + user }] }], generationConfig: { temperature: 0 } };
 
-    async function doCall(apiKey) {
-      const url = `${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`;
+    // Track exhausted keys in this specific question attempt
+    let exhaustedKeys = new Set();
 
-      // === INFINITE RETRY LOOP ===
+    async function doCall() {
+      let cur = getCurrentKey();
+      const url = `${GEMINI_URL}?key=${encodeURIComponent(cur.key)}`;
+
       while (true) {
         let res, data = null;
         try {
@@ -277,42 +281,53 @@
           }
           try { data = await res.json(); } catch { }
         } catch {
-          // Network error -> Retry after delay
           const el = document.getElementById("quiz-auto-status");
           if (el) el.textContent = "⏳ Network Error -> Retrying in 5s...";
           await sleep(5000);
           continue;
         }
 
-        // === 429 HANDLING ===
+        // === 429 HANDLING (SMART ROTATION) ===
         if (res.status === 429) {
-          const elStatus = document.getElementById("quiz-auto-status");
-          if (elStatus) elStatus.textContent = "⏳ Quota Limit (429) -> Cooling down 15s (Persistent)...";
-          // Wait 15s and LOOP again (infinite retry)
-          await sleep(15000);
-          continue;
+          exhaustedKeys.add(cur.key);
+
+          // Nếu còn key khác chưa thử
+          if (exhaustedKeys.size < keys.length) {
+            const elStatus = document.getElementById("quiz-auto-status");
+            if (elStatus) elStatus.textContent = `⏳ Key #${cur.idx + 1} hết lượt -> Đổi Key...`;
+
+            // Rotate key index immediately
+            const nextIdx = (cur.idx + 1) % keys.length;
+            setKeyIndex(nextIdx);
+            updateKeyBadge();
+
+            // Retry with new key without sleeping
+            return doCall();
+          } else {
+            // TẤT CẢ key đều hết lượt -> Ngủ đông
+            const elStatus = document.getElementById("quiz-auto-status");
+            if (elStatus) elStatus.textContent = "⏳ TẤT CẢ Key đều hết lượt -> Chờ 15s...";
+            await sleep(15000);
+            exhaustedKeys.clear(); // Reset list after sleep
+            return doCall();
+          }
         }
 
-        // Handle other errors (4xx/5xx)
         if ([401, 403].includes(res.status)) {
-          // Only rotate if real auth issue. If single key, will throw.
           const rotated = await askRotateConsentAsync(`HTTP ${res.status} (invalid/blocked)`);
-          if (rotated) return doCall(rotated.key); // Recursion with new key
+          if (rotated) return doCall();
           throw new Error(`Gemini lỗi HTTP ${res.status} (không đổi key)`);
         }
 
         if (!res.ok) {
-          // Other error -> Maybe server temporary error? Retry backoff
           const el = document.getElementById("quiz-auto-status");
           if (el) el.textContent = `⏳ Error ${res.status} -> Retrying in 5s...`;
           await sleep(5000);
           continue;
         }
 
-        // Success 200 OK -> Check payload
         const cands = data?.candidates;
         if (!Array.isArray(cands) || cands.length === 0) {
-          // No candidates -> Blocked response? Retry...
           const el = document.getElementById("quiz-auto-status");
           if (el) el.textContent = "⏳ Empty Candidate -> Retrying in 5s...";
           await sleep(5000);
@@ -327,11 +342,11 @@
         }
 
         const obj = extractJSON(text) || {};
-        return obj; // BREAK LOOP and return
+        return obj;
       }
     }
 
-    const obj = await doCall(cur.key);
+    const obj = await doCall();
     if (Number.isInteger(obj.answerIndex) && options[obj.answerIndex]) return obj;
     if (obj.answerText) {
       const normAns = normalizeText(obj.answerText);
@@ -340,6 +355,7 @@
     }
     throw new Error("Gemini trả JSON không hợp lệ với danh sách đáp án.");
   }
+
 
   /* ===== Session Cache (AI Results) ===== */
   // Cache tạm kết quả AI để nếu F5 hoặc gặp lại câu hỏi cũ thì không tốn API request
@@ -747,10 +763,14 @@ Dedup:${dedup}, IncorrectFiltered:${filteredIncorrect}, NoQ:${errNoQ}, NoAns:${e
     const labN = document.createElement("div"); labN.textContent = "#Q";
     const inN = document.createElement("input"); inN.type = "number"; inN.min = "1"; inN.step = "1"; inN.value = localStorage.getItem(LS_NQ) ?? "1";
     Object.assign(inN.style, { width: "80px", padding: "6px", borderRadius: "8px", border: "1px solid #374151", background: "#111827", color: "#fff" });
-    // Auto-fix: Delay cũ (1s/4s) vẫn không đủ an toàn. Ép lên tối thiểu 2s.
-    // User requested "SAFE LIMITS" -> Force default to 4s if previously unsafe or unset.
-    let savedD = parseFloat(localStorage.getItem(LS_DELAY) || "0");
-    if (savedD < 4) { savedD = 4; localStorage.setItem(LS_DELAY, "4"); }
+    // Auto-fix: Delay mặc định lần đầu là 4s để an toàn. Sau đó tôn trọng input người dùng.
+    let savedDRaw = localStorage.getItem(LS_DELAY);
+    let savedD = 4;
+    if (savedDRaw !== null) {
+      savedD = parseFloat(savedDRaw);
+    } else {
+      localStorage.setItem(LS_DELAY, "4");
+    }
 
     const labD = document.createElement("div"); labD.textContent = "Delay(s)";
     const inD = document.createElement("input");
@@ -773,12 +793,6 @@ Dedup:${dedup}, IncorrectFiltered:${filteredIncorrect}, NoQ:${errNoQ}, NoAns:${e
     const btnHarvest = document.createElement("button"); btnHarvest.textContent = "📥 Harvest Q/A (review page)";
     Object.assign(btnHarvest.style, { padding: "8px", border: "none", borderRadius: "8px", background: "#2563eb", color: "#fff", fontWeight: "700", cursor: "pointer", width: "100%" });
 
-    const btnExportPage = document.createElement("button"); btnExportPage.textContent = "⬇️ Export CORRECT (page)";
-    Object.assign(btnExportPage.style, { padding: "8px", border: "none", borderRadius: "8px", background: "#10b981", color: "#0b1b13", fontWeight: "800", cursor: "pointer", width: "100%" });
-
-    const btnExportMem = document.createElement("button"); btnExportMem.textContent = "⬇️ Export MEMORY (JSON/CSV)";
-    Object.assign(btnExportMem.style, { padding: "8px", border: "none", borderRadius: "8px", background: "#22c55e", color: "#0b1b13", fontWeight: "800", cursor: "pointer", width: "100%" });
-
     const btnDelete = document.createElement("button"); btnDelete.textContent = "🗑 Delete data (memory)";
     Object.assign(btnDelete.style, { padding: "8px", border: "none", borderRadius: "8px", background: "#9ca3af", color: "#111827", fontWeight: "800", cursor: "pointer", width: "100%" });
 
@@ -800,13 +814,11 @@ Dedup:${dedup}, IncorrectFiltered:${filteredIncorrect}, NoQ:${errNoQ}, NoAns:${e
       if (input.trim()) { const arr = input.split(/\r?\n/).map(s => s.trim()).filter(Boolean); if (arr.length) { setKeys(arr); setKeyIndex(0); updateKeyBadge(); alert(`Đã lưu ${arr.length} key. Đang dùng key #1/${arr.length}.`); } }
     };
     btnHarvest.onclick = harvestQA;
-    btnExportPage.onclick = exportCorrectQAFromPage;  // export theo DOM trang review
-    btnExportMem.onclick = exportMemoryQA;           // export theo dữ liệu đã lưu
     btnDelete.onclick = () => { if (!confirm("Are you sure you want to DELETE all stored memory (answers)?")) return; localStorage.removeItem(LS_MEM); updateMemStats(); alert("Đã xoá toàn bộ dữ liệu bộ nhớ (answers)."); };
     chkAuto.onchange = () => localStorage.setItem(LS_AUTOROTATE, chkAuto.checked ? "1" : "0");
 
     row2.append(btnStart, btnStop);
-    panel.append(badge, memstats, row1, rowAuto, row2, btnHarvest, btnExportPage, btnExportMem, btnDelete, btnKeys, status);
+    panel.append(badge, memstats, row1, rowAuto, row2, btnHarvest, btnDelete, btnKeys, status);
 
     mountWhenBodyReady(() => { document.body.appendChild(panel); updateKeyBadge(); updateMemStats(); });
   }
