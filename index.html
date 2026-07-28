@@ -371,6 +371,41 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-light);
         }
+
+        /* Modal Drawer styling for live mistakes */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+            animation: fade-in 0.2s ease;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: slide-up 0.3s ease;
+        }
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         
         .hide { display: none !important; }
     </style>
@@ -433,9 +468,10 @@
             
             <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem; font-weight: 500; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <span id="q-counter">Question 1 of 10</span>
-                <div id="quiz-live-stats" style="display: flex; gap: 1rem;">
+                <div id="quiz-live-stats" style="display: flex; gap: 1rem; align-items: center;">
                     <span style="color: var(--success); font-weight: 600;">Correct: <span id="quiz-correct-count">0</span></span>
                     <span style="color: var(--danger); font-weight: 600;">Wrong: <span id="quiz-wrong-count">0</span></span>
+                    <span id="btn-review-errors-live" class="hide" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 600; margin-left: 0.5rem;" onclick="toggleLiveErrorDrawer()">Review Mistakes</span>
                 </div>
                 <span id="q-mode">Mode: Learn</span>
             </div>
@@ -483,6 +519,19 @@
             </div>
             <div class="review-list" id="full-review-list">
                 <!-- All questions injected here -->
+            </div>
+        </div>
+
+        <!-- Live error drawer overlay -->
+        <div id="live-error-modal" class="modal-overlay" onclick="closeLiveErrorDrawer()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <h3 class="serif-font" style="font-size: 1.5rem; color: var(--danger);">Mistakes Review</h3>
+                    <button class="btn" style="padding: 0.4rem 1rem;" onclick="closeLiveErrorDrawer()">Close</button>
+                </div>
+                <div class="review-list" id="live-error-list" style="overflow-y: auto; max-height: 55vh; margin-top: 1rem; padding-right: 0.5rem;">
+                    <!-- Live errors injected here -->
+                </div>
             </div>
         </div>
     </main>
@@ -601,7 +650,8 @@
             wrongQuestions = [];
             
             document.getElementById('q-mode').innerText = 'Mode: ' + (currentMode === 'learn' ? 'Learn' : 'Test');
-            
+            document.getElementById('btn-review-errors-live').classList.add('hide');
+
             // Hide live stats for Test mode to prevent distraction, show for Learn mode
             if (currentMode === 'test') {
                 document.getElementById('quiz-live-stats').style.display = 'none';
@@ -643,6 +693,7 @@
             document.getElementById('quiz-live-stats').style.display = 'flex';
             document.getElementById('quiz-correct-count').innerText = '0';
             document.getElementById('quiz-wrong-count').innerText = '0';
+            document.getElementById('btn-review-errors-live').classList.add('hide');
 
             renderQuestion();
             showScreen('screen-quiz');
@@ -723,10 +774,19 @@
                     opts[idx].classList.add('wrong');
                     opts[q.correctIndex].classList.add('correct');
                     wrongCount++;
+                    errors.push({ 
+                        q: q.question, 
+                        yourAns: q.answers[idx], 
+                        correctAns: q.answers[q.correctIndex] 
+                    });
                 }
                 
                 document.getElementById('quiz-correct-count').innerText = correctCount;
                 document.getElementById('quiz-wrong-count').innerText = wrongCount;
+
+                if (wrongCount > 0) {
+                    document.getElementById('btn-review-errors-live').classList.remove('hide');
+                }
             }
             
             updateControls();
@@ -778,6 +838,49 @@
                 currentQIndex--;
                 renderQuestion();
             }
+        }
+
+        // Live error drawer control
+        function toggleLiveErrorDrawer() {
+            const modal = document.getElementById('live-error-modal');
+            const list = document.getElementById('live-error-list');
+            list.innerHTML = '';
+            
+            errors.forEach((err, idx) => {
+                const el = document.createElement('div');
+                el.className = 'review-item';
+                el.style.padding = '1.2rem';
+                el.style.fontSize = '0.95rem';
+                el.style.marginBottom = '1rem';
+                
+                const qDiv = document.createElement('div');
+                qDiv.className = 'review-q';
+                qDiv.style.fontSize = '1.1rem';
+                qDiv.style.marginBottom = '0.5rem';
+                qDiv.innerText = `${idx + 1}. ${err.q}`;
+
+                const yourAnsDiv = document.createElement('div');
+                yourAnsDiv.style.color = 'var(--danger)';
+                yourAnsDiv.style.fontWeight = '500';
+                yourAnsDiv.style.marginBottom = '0.3rem';
+                yourAnsDiv.innerText = 'Your Answer: ' + err.yourAns;
+
+                const reqAnsDiv = document.createElement('div');
+                reqAnsDiv.className = 'review-a';
+                reqAnsDiv.innerText = 'Correct Answer: ' + err.correctAns;
+
+                el.appendChild(qDiv);
+                el.appendChild(yourAnsDiv);
+                el.appendChild(reqAnsDiv);
+                
+                list.appendChild(el);
+            });
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeLiveErrorDrawer() {
+            document.getElementById('live-error-modal').style.display = 'none';
         }
 
         function submitTest() {
