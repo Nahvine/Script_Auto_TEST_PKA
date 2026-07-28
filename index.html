@@ -322,6 +322,25 @@
             color: var(--success);
             font-weight: 500;
         }
+
+        /* Search input styling */
+        .search-box {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            outline: none;
+            transition: var(--transition);
+            background: var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+        }
+        .search-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
         
         .hide { display: none !important; }
     </style>
@@ -366,8 +385,12 @@
                 <div class="progress-fill" id="progress-fill"></div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem; font-weight: 500;">
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem; font-weight: 500; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <span id="q-counter">Question 1 of 10</span>
+                <div id="quiz-live-stats" style="display: flex; gap: 1rem;">
+                    <span style="color: var(--success); font-weight: 600;">Correct: <span id="quiz-correct-count">0</span></span>
+                    <span style="color: var(--danger); font-weight: 600;">Wrong: <span id="quiz-wrong-count">0</span></span>
+                </div>
                 <span id="q-mode">Mode: Learn</span>
             </div>
 
@@ -392,7 +415,10 @@
                 <h2 style="font-size: 2.2rem; margin-bottom: 1rem;">Test Complete</h2>
                 <div class="result-score serif-font" id="result-score">85%</div>
                 <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;" id="result-text">17 out of 20 correct</p>
-                <button class="btn btn-primary" onclick="goHome()">Return to Dashboard</button>
+                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn" onclick="goHome()">Return to Dashboard</button>
+                    <button class="btn btn-primary hide" id="btn-retry-errors" onclick="startMode('retry')">Retry Mistakes</button>
+                </div>
             </div>
             
             <h3 style="margin-top: 3rem; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 2px solid var(--border-color);">Error Review</h3>
@@ -426,6 +452,10 @@
         let errors = [];
         let hasAnsweredCurrent = false;
         let selectedOptionIndex = -1;
+        
+        let correctCount = 0;
+        let wrongCount = 0;
+        let wrongQuestions = [];
 
         function shuffle(array) {
             let currentIndex = array.length,  randomIndex;
@@ -456,17 +486,36 @@
                 return;
             }
 
-            questions = [...db];
-            if (mode === 'test') {
-                shuffle(questions);
-                if (questions.length > 50) questions = questions.slice(0, 50);
+            if (mode === 'retry') {
+                questions = [...wrongQuestions];
+                currentMode = 'learn'; // Treat retry as a custom learn session
+            } else {
+                questions = [...db];
+                if (mode === 'test') {
+                    shuffle(questions);
+                    if (questions.length > 50) questions = questions.slice(0, 50);
+                }
             }
             
+            // Reset counters
             currentQIndex = 0;
             score = 0;
+            correctCount = 0;
+            wrongCount = 0;
             errors = [];
-            document.getElementById('q-mode').innerText = 'Mode: ' + (mode === 'learn' ? 'Learn' : 'Test');
+            wrongQuestions = [];
             
+            document.getElementById('q-mode').innerText = 'Mode: ' + (currentMode === 'learn' ? 'Learn' : 'Test');
+            
+            // Hide live stats for Test mode to prevent distraction, show for Learn mode
+            if (currentMode === 'test') {
+                document.getElementById('quiz-live-stats').style.display = 'none';
+            } else {
+                document.getElementById('quiz-live-stats').style.display = 'flex';
+                document.getElementById('quiz-correct-count').innerText = '0';
+                document.getElementById('quiz-wrong-count').innerText = '0';
+            }
+
             renderQuestion();
             showScreen('screen-quiz');
         }
@@ -525,12 +574,18 @@
                 if (idx === q.correctIndex) {
                     opts[idx].classList.add('correct');
                     score++;
+                    correctCount++;
                 } else {
                     opts[idx].classList.add('wrong');
                     opts[q.correctIndex].classList.add('correct');
+                    wrongCount++;
+                    wrongQuestions.push(q);
                     errors.push({ q: q.question, yourAns: q.answers[idx], correctAns: q.answers[q.correctIndex] });
                 }
                 
+                document.getElementById('quiz-correct-count').innerText = correctCount;
+                document.getElementById('quiz-wrong-count').innerText = wrongCount;
+
                 if (currentQIndex < questions.length - 1) {
                     document.getElementById('btn-next').classList.remove('hide');
                 } else {
@@ -551,6 +606,7 @@
                 if (selectedOptionIndex === q.correctIndex) {
                     score++;
                 } else {
+                    wrongQuestions.push(q);
                     errors.push({ 
                         q: q.question, 
                         yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
@@ -569,6 +625,7 @@
                 if (selectedOptionIndex === q.correctIndex) {
                     score++;
                 } else {
+                    wrongQuestions.push(q);
                     errors.push({ 
                         q: q.question, 
                         yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
@@ -588,7 +645,9 @@
             
             if (errors.length === 0) {
                 errorList.innerHTML = '<div class="review-item" style="text-align:center; padding: 2rem;"><div class="review-q">Perfect score! No errors to review.</div></div>';
+                document.getElementById('btn-retry-errors').classList.add('hide');
             } else {
+                document.getElementById('btn-retry-errors').classList.remove('hide');
                 errors.forEach(err => {
                     const el = document.createElement('div');
                     el.className = 'review-item';
@@ -622,9 +681,23 @@
             const list = document.getElementById('full-review-list');
             list.innerHTML = '';
             
+            // Create search input once
+            if (!document.getElementById('search-input')) {
+                const searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.id = 'search-input';
+                searchInput.placeholder = 'Search questions by keyword...';
+                searchInput.className = 'search-box';
+                searchInput.oninput = filterReviewList;
+                list.parentNode.insertBefore(searchInput, list);
+            } else {
+                document.getElementById('search-input').value = '';
+            }
+
             db.forEach((q, i) => {
                 const el = document.createElement('div');
                 el.className = 'review-item';
+                el.dataset.questionText = q.question.toLowerCase();
                 
                 const indexDiv = document.createElement('div');
                 indexDiv.style.color = 'var(--text-muted)';
@@ -646,6 +719,18 @@
                 el.appendChild(aDiv);
 
                 list.appendChild(el);
+            });
+        }
+
+        function filterReviewList() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const items = document.querySelectorAll('#full-review-list .review-item');
+            items.forEach(item => {
+                if (item.dataset.questionText.includes(query)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
             });
         }
 
