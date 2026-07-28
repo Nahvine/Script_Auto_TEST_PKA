@@ -141,7 +141,7 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             width: 100%;
-            margin-top: 2rem;
+            margin-top: 1rem;
         }
 
         .menu-card {
@@ -171,6 +171,36 @@
         .menu-card p {
             color: var(--text-muted);
             font-size: 0.95rem;
+        }
+
+        /* Settings box styling */
+        .settings-panel {
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--radius); 
+            padding: 1.5rem; 
+            margin-bottom: 1rem; 
+            display: flex; 
+            gap: 2rem; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            box-shadow: var(--shadow);
+            width: 100%;
+        }
+
+        .settings-panel label {
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            cursor: pointer; 
+            font-weight: 500;
+            user-select: none;
+        }
+
+        .settings-panel input[type="checkbox"] {
+            width: 18px; 
+            height: 18px; 
+            accent-color: var(--accent);
         }
 
         /* Question Screen */
@@ -358,9 +388,21 @@
     <main>
         <!-- Home Screen -->
         <div id="screen-home" class="screen active">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h1 style="font-size: 3rem; margin-bottom: 1rem;">Welcome to Study Mode</h1>
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <h1 style="font-size: 3rem; margin-bottom: 0.5rem;">Welcome to Study Mode</h1>
                 <p style="color: var(--text-muted); font-size: 1.1rem;">Select a method below to begin practicing your questions.</p>
+            </div>
+
+            <!-- Configuration Settings -->
+            <div class="settings-panel">
+                <label>
+                    <input type="checkbox" id="setting-shuffle-questions" checked>
+                    Shuffle Questions
+                </label>
+                <label>
+                    <input type="checkbox" id="setting-shuffle-answers" checked>
+                    Shuffle Answer Options
+                </label>
             </div>
 
             <div class="menu-grid">
@@ -371,6 +413,10 @@
                 <div class="menu-card" onclick="startMode('test')">
                     <h2>Test Mode</h2>
                     <p>Take a simulated test with random questions. View your score at the end.</p>
+                </div>
+                <div class="menu-card" onclick="startMode('round')">
+                    <h2>Round Mode (20 Qs)</h2>
+                    <p>Divide questions into rounds of 20. Fail a question? Finish the round, then repeat that entire round until you get 100% correct to unlock the next one.</p>
                 </div>
                 <div class="menu-card" onclick="startMode('flashcard')">
                     <h2>Question Bank</h2>
@@ -405,19 +451,18 @@
             <div class="controls">
                 <button class="btn" onclick="goHome()">Exit</button>
                 <button class="btn btn-primary hide" id="btn-next" onclick="nextQuestion()">Next Question &rarr;</button>
-                <button class="btn btn-primary hide" id="btn-submit" onclick="submitTest()">Finish Test</button>
+                <button class="btn btn-primary hide" id="btn-submit" onclick="submitTest()">Finish Session</button>
             </div>
         </div>
 
         <!-- Result Screen -->
         <div id="screen-result" class="screen">
             <div class="result-panel">
-                <h2 style="font-size: 2.2rem; margin-bottom: 1rem;">Test Complete</h2>
+                <h2 style="font-size: 2.2rem; margin-bottom: 1rem;" id="result-title">Session Complete</h2>
                 <div class="result-score serif-font" id="result-score">85%</div>
                 <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;" id="result-text">17 out of 20 correct</p>
-                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-                    <button class="btn" onclick="goHome()">Return to Dashboard</button>
-                    <button class="btn btn-primary hide" id="btn-retry-errors" onclick="startMode('retry')">Retry Mistakes</button>
+                <div id="result-actions" style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    <!-- Action buttons injected here dynamically -->
                 </div>
             </div>
             
@@ -456,6 +501,10 @@
         let correctCount = 0;
         let wrongCount = 0;
         let wrongQuestions = [];
+        
+        // Round mode variables
+        let rounds = [];
+        let currentRoundIndex = 0;
 
         function shuffle(array) {
             let currentIndex = array.length,  randomIndex;
@@ -466,6 +515,19 @@
                 array[randomIndex], array[currentIndex]];
             }
             return array;
+        }
+
+        // Shuffles choices of a question and correctly updates correctIndex
+        function shuffleAnswers(q) {
+            const originalCorrectText = q.answers[q.correctIndex] || q.correctText;
+            const answersCopy = [...q.answers];
+            shuffle(answersCopy);
+            const newCorrectIndex = answersCopy.indexOf(originalCorrectText);
+            return {
+                ...q,
+                answers: answersCopy,
+                correctIndex: newCorrectIndex
+            };
         }
 
         function showScreen(id) {
@@ -486,15 +548,42 @@
                 return;
             }
 
+            const shuffleQuestionsSetting = document.getElementById('setting-shuffle-questions').checked;
+            const shuffleAnswersSetting = document.getElementById('setting-shuffle-answers').checked;
+
+            if (mode === 'round') {
+                let tempDb = [...db];
+                if (shuffleQuestionsSetting) {
+                    shuffle(tempDb);
+                }
+                
+                rounds = [];
+                const roundSize = 20;
+                for (let i = 0; i < tempDb.length; i += roundSize) {
+                    rounds.push(tempDb.slice(i, i + roundSize));
+                }
+                
+                currentRoundIndex = 0;
+                startRound(0, shuffleQuestionsSetting, shuffleAnswersSetting);
+                return;
+            }
+
             if (mode === 'retry') {
                 questions = [...wrongQuestions];
                 currentMode = 'learn'; // Treat retry as a custom learn session
             } else {
                 questions = [...db];
-                if (mode === 'test') {
+                if (mode === 'test' || (mode === 'learn' && shuffleQuestionsSetting)) {
                     shuffle(questions);
-                    if (questions.length > 50) questions = questions.slice(0, 50);
                 }
+                if (mode === 'test' && questions.length > 50) {
+                    questions = questions.slice(0, 50);
+                }
+            }
+            
+            // Apply answer options shuffling if setting enabled
+            if (shuffleAnswersSetting) {
+                questions = questions.map(q => shuffleAnswers(q));
             }
             
             // Reset counters
@@ -515,6 +604,37 @@
                 document.getElementById('quiz-correct-count').innerText = '0';
                 document.getElementById('quiz-wrong-count').innerText = '0';
             }
+
+            renderQuestion();
+            showScreen('screen-quiz');
+        }
+
+        function startRound(roundIndex, shuffleQs, shuffleAns) {
+            currentRoundIndex = roundIndex;
+            currentMode = 'round';
+            let roundRawQuestions = [...rounds[roundIndex]];
+            
+            if (shuffleQs) {
+                shuffle(roundRawQuestions);
+            }
+            
+            if (shuffleAns) {
+                questions = roundRawQuestions.map(q => shuffleAnswers(q));
+            } else {
+                questions = roundRawQuestions;
+            }
+            
+            currentQIndex = 0;
+            score = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            errors = [];
+            wrongQuestions = [];
+            
+            document.getElementById('q-mode').innerText = `Round ${roundIndex + 1}`;
+            document.getElementById('quiz-live-stats').style.display = 'flex';
+            document.getElementById('quiz-correct-count').innerText = '0';
+            document.getElementById('quiz-wrong-count').innerText = '0';
 
             renderQuestion();
             showScreen('screen-quiz');
@@ -560,14 +680,15 @@
         }
 
         function selectOption(idx) {
-            if (currentMode === 'learn' && hasAnsweredCurrent) return;
+            // Learn & Round mode show feedback immediately, user cannot change answer once chosen
+            if ((currentMode === 'learn' || currentMode === 'round') && hasAnsweredCurrent) return;
             
             selectedOptionIndex = idx;
             const opts = document.querySelectorAll('.option');
             opts.forEach(opt => opt.classList.remove('selected'));
             opts[idx].classList.add('selected');
 
-            if (currentMode === 'learn') {
+            if (currentMode === 'learn' || currentMode === 'round') {
                 hasAnsweredCurrent = true;
                 const q = questions[currentQIndex];
                 
@@ -592,6 +713,7 @@
                     document.getElementById('btn-submit').classList.remove('hide');
                 }
             } else {
+                // Test mode just highlights selection
                 if (currentQIndex < questions.length - 1) {
                     document.getElementById('btn-next').classList.remove('hide');
                 } else {
@@ -637,17 +759,75 @@
             document.getElementById('progress-fill').style.width = '100%';
             
             const pct = Math.round((score / questions.length) * 100);
-            document.getElementById('result-score').innerText = pct + '%';
-            document.getElementById('result-text').innerText = `${score} out of ${questions.length} correct`;
+            const scoreEl = document.getElementById('result-score');
+            const textEl = document.getElementById('result-text');
+            const titleEl = document.getElementById('result-title');
             
+            // Clear and dynamically build action buttons
+            const actionContainer = document.getElementById('result-actions');
+            actionContainer.innerHTML = '';
+            
+            // Return button is always present
+            const returnBtn = document.createElement('button');
+            returnBtn.className = 'btn';
+            returnBtn.innerText = 'Return to Dashboard';
+            returnBtn.onclick = goHome;
+            actionContainer.appendChild(returnBtn);
+
+            if (currentMode === 'round') {
+                scoreEl.innerText = `${score}/${questions.length}`;
+                if (score === questions.length) {
+                    titleEl.innerText = 'Round Cleared!';
+                    textEl.innerText = `Outstanding! You got 100% correct in Round ${currentRoundIndex + 1}.`;
+                    
+                    if (currentRoundIndex < rounds.length - 1) {
+                        const nextRoundBtn = document.createElement('button');
+                        nextRoundBtn.className = 'btn btn-primary';
+                        nextRoundBtn.innerText = 'Next Round →';
+                        nextRoundBtn.onclick = () => {
+                            const shuffleQs = document.getElementById('setting-shuffle-questions').checked;
+                            const shuffleAns = document.getElementById('setting-shuffle-answers').checked;
+                            startRound(currentRoundIndex + 1, shuffleQs, shuffleAns);
+                        };
+                        actionContainer.appendChild(nextRoundBtn);
+                    } else {
+                        textEl.innerText = "Congratulations! You have completed all rounds of the database with 100% accuracy!";
+                    }
+                } else {
+                    titleEl.innerText = 'Round Failed';
+                    textEl.innerText = `You answered ${score} out of ${questions.length} correctly. You must get 100% in Round ${currentRoundIndex + 1} to unlock the next round.`;
+                    
+                    const retryRoundBtn = document.createElement('button');
+                    retryRoundBtn.className = 'btn btn-primary';
+                    retryRoundBtn.innerText = `Retry Round ${currentRoundIndex + 1}`;
+                    retryRoundBtn.onclick = () => {
+                        const shuffleQs = document.getElementById('setting-shuffle-questions').checked;
+                        const shuffleAns = document.getElementById('setting-shuffle-answers').checked;
+                        startRound(currentRoundIndex, shuffleQs, shuffleAns);
+                    };
+                    actionContainer.appendChild(retryRoundBtn);
+                }
+            } else {
+                titleEl.innerText = 'Session Complete';
+                scoreEl.innerText = pct + '%';
+                textEl.innerText = `${score} out of ${questions.length} correct`;
+                
+                if (errors.length > 0) {
+                    const retryMistakesBtn = document.createElement('button');
+                    retryMistakesBtn.className = 'btn btn-primary';
+                    retryMistakesBtn.innerText = 'Retry Mistakes';
+                    retryMistakesBtn.onclick = () => startMode('retry');
+                    actionContainer.appendChild(retryMistakesBtn);
+                }
+            }
+            
+            // Build the error list markup
             const errorList = document.getElementById('error-list');
             errorList.innerHTML = '';
             
             if (errors.length === 0) {
                 errorList.innerHTML = '<div class="review-item" style="text-align:center; padding: 2rem;"><div class="review-q">Perfect score! No errors to review.</div></div>';
-                document.getElementById('btn-retry-errors').classList.add('hide');
             } else {
-                document.getElementById('btn-retry-errors').classList.remove('hide');
                 errors.forEach(err => {
                     const el = document.createElement('div');
                     el.className = 'review-item';
