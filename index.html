@@ -450,8 +450,11 @@
 
             <div class="controls">
                 <button class="btn" onclick="goHome()">Exit</button>
-                <button class="btn btn-primary hide" id="btn-next" onclick="nextQuestion()">Next Question &rarr;</button>
-                <button class="btn btn-primary hide" id="btn-submit" onclick="submitTest()">Finish Session</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn hide" id="btn-prev" onclick="prevQuestion()">&larr; Prev</button>
+                    <button class="btn btn-primary hide" id="btn-next" onclick="nextQuestion()">Next &rarr;</button>
+                    <button class="btn btn-primary hide" id="btn-submit" onclick="submitTest()">Finish Session</button>
+                </div>
             </div>
         </div>
 
@@ -492,10 +495,11 @@
 
         let currentMode = '';
         let currentQIndex = 0;
+        let maxReachedQIndex = 0;
+        let userAnswers = [];
         let score = 0;
         let questions = [];
         let errors = [];
-        let hasAnsweredCurrent = false;
         let selectedOptionIndex = -1;
         
         let correctCount = 0;
@@ -586,8 +590,10 @@
                 questions = questions.map(q => shuffleAnswers(q));
             }
             
-            // Reset counters
+            // Reset counters and arrays
             currentQIndex = 0;
+            maxReachedQIndex = 0;
+            userAnswers = new Array(questions.length).fill(-1);
             score = 0;
             correctCount = 0;
             wrongCount = 0;
@@ -625,6 +631,8 @@
             }
             
             currentQIndex = 0;
+            maxReachedQIndex = 0;
+            userAnswers = new Array(questions.length).fill(-1);
             score = 0;
             correctCount = 0;
             wrongCount = 0;
@@ -641,12 +649,12 @@
         }
 
         function renderQuestion() {
-            hasAnsweredCurrent = false;
-            selectedOptionIndex = -1;
             const q = questions[currentQIndex];
+            const answeredIdx = userAnswers[currentQIndex];
+            selectedOptionIndex = answeredIdx;
             
             document.getElementById('q-counter').innerText = `Question ${currentQIndex + 1} of ${questions.length}`;
-            document.getElementById('progress-fill').style.width = `${((currentQIndex) / questions.length) * 100}%`;
+            document.getElementById('progress-fill').style.width = `${((maxReachedQIndex) / questions.length) * 100}%`;
             
             document.getElementById('question-text').innerText = q.question;
             
@@ -671,90 +679,126 @@
                 optDiv.appendChild(document.createTextNode(' '));
                 optDiv.appendChild(textSpan);
 
+                // Highlight if already answered
+                if (answeredIdx !== -1) {
+                    if (currentMode === 'learn' || currentMode === 'round') {
+                        if (idx === q.correctIndex) {
+                            optDiv.classList.add('correct');
+                        } else if (idx === answeredIdx) {
+                            optDiv.classList.add('wrong');
+                        }
+                    } else {
+                        // Test mode just highlights chosen selection
+                        if (idx === answeredIdx) {
+                            optDiv.classList.add('selected');
+                        }
+                    }
+                }
+
                 optDiv.onclick = () => selectOption(idx);
                 optsContainer.appendChild(optDiv);
             });
 
-            document.getElementById('btn-next').classList.add('hide');
-            document.getElementById('btn-submit').classList.add('hide');
+            updateControls();
         }
 
         function selectOption(idx) {
             // Learn & Round mode show feedback immediately, user cannot change answer once chosen
-            if ((currentMode === 'learn' || currentMode === 'round') && hasAnsweredCurrent) return;
+            if ((currentMode === 'learn' || currentMode === 'round') && userAnswers[currentQIndex] !== -1) return;
             
             selectedOptionIndex = idx;
+            userAnswers[currentQIndex] = idx;
+            
             const opts = document.querySelectorAll('.option');
             opts.forEach(opt => opt.classList.remove('selected'));
             opts[idx].classList.add('selected');
 
             if (currentMode === 'learn' || currentMode === 'round') {
-                hasAnsweredCurrent = true;
                 const q = questions[currentQIndex];
                 
                 if (idx === q.correctIndex) {
                     opts[idx].classList.add('correct');
-                    score++;
                     correctCount++;
                 } else {
                     opts[idx].classList.add('wrong');
                     opts[q.correctIndex].classList.add('correct');
                     wrongCount++;
-                    wrongQuestions.push(q);
-                    errors.push({ q: q.question, yourAns: q.answers[idx], correctAns: q.answers[q.correctIndex] });
                 }
                 
                 document.getElementById('quiz-correct-count').innerText = correctCount;
                 document.getElementById('quiz-wrong-count').innerText = wrongCount;
+            }
+            
+            updateControls();
+        }
 
-                if (currentQIndex < questions.length - 1) {
-                    document.getElementById('btn-next').classList.remove('hide');
+        function updateControls() {
+            const prevBtn = document.getElementById('btn-prev');
+            const nextBtn = document.getElementById('btn-next');
+            const submitBtn = document.getElementById('btn-submit');
+            
+            // Show/hide Prev button
+            if (currentQIndex > 0) {
+                prevBtn.classList.remove('hide');
+            } else {
+                prevBtn.classList.add('hide');
+            }
+            
+            const hasAnswered = userAnswers[currentQIndex] !== -1;
+            const isLastQuestion = currentQIndex === questions.length - 1;
+            
+            if (isLastQuestion) {
+                nextBtn.classList.add('hide');
+                if (hasAnswered) {
+                    submitBtn.classList.remove('hide');
                 } else {
-                    document.getElementById('btn-submit').classList.remove('hide');
+                    submitBtn.classList.add('hide');
                 }
             } else {
-                // Test mode just highlights selection
-                if (currentQIndex < questions.length - 1) {
-                    document.getElementById('btn-next').classList.remove('hide');
+                submitBtn.classList.add('hide');
+                // Allow Next if we are behind the maximum unlocked question, OR if we have just answered the current question
+                if (currentQIndex < maxReachedQIndex || hasAnswered) {
+                    nextBtn.classList.remove('hide');
                 } else {
-                    document.getElementById('btn-submit').classList.remove('hide');
+                    nextBtn.classList.add('hide');
                 }
             }
         }
 
         function nextQuestion() {
-            if (currentMode === 'test') {
-                const q = questions[currentQIndex];
-                if (selectedOptionIndex === q.correctIndex) {
-                    score++;
-                } else {
-                    wrongQuestions.push(q);
-                    errors.push({ 
-                        q: q.question, 
-                        yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
-                        correctAns: q.answers[q.correctIndex] 
-                    });
-                }
+            if (currentQIndex === maxReachedQIndex) {
+                maxReachedQIndex++;
             }
-            
             currentQIndex++;
             renderQuestion();
         }
 
+        function prevQuestion() {
+            if (currentQIndex > 0) {
+                currentQIndex--;
+                renderQuestion();
+            }
+        }
+
         function submitTest() {
-            if (currentMode === 'test') {
-                const q = questions[currentQIndex];
-                if (selectedOptionIndex === q.correctIndex) {
+            // Process evaluation at submit time based on all saved userAnswers
+            score = 0;
+            errors = [];
+            wrongQuestions = [];
+            
+            questions.forEach((q, idx) => {
+                const ansIdx = userAnswers[idx];
+                if (ansIdx === q.correctIndex) {
                     score++;
                 } else {
                     wrongQuestions.push(q);
                     errors.push({ 
                         q: q.question, 
-                        yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
+                        yourAns: ansIdx === -1 ? '(No answer selected)' : q.answers[ansIdx], 
                         correctAns: q.answers[q.correctIndex] 
                     });
                 }
-            }
+            });
             
             document.getElementById('progress-fill').style.width = '100%';
             
