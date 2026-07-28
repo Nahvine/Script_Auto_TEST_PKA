@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Application</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f9f9f7;
+            --text-main: #2c2c2c;
+            --text-muted: #737373;
+            --accent: #4a6fa5;
+            --accent-light: #e8eef5;
+            --danger: #d93025;
+            --danger-light: #fce8e6;
+            --success: #1e7e34;
+            --success-light: #e6f4ea;
+            --border-color: #e0e0e0;
+            --card-bg: #ffffff;
+            --radius: 12px;
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 400;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, .serif-font {
+            font-family: 'Lora', serif;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        header {
+            padding: 1.5rem 3rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .stats span {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4rem 2rem;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            animation: fade-in 0.3s ease;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.8rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            font-size: 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            background: #395a8a;
+            color: white;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .menu-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 2.5rem 2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .menu-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+
+        .menu-card h2 {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .menu-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Question Screen */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            position: relative;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-box {
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .option {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.2rem 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .option:hover {
+            border-color: #bbbbbb;
+            background: #fbfbfb;
+        }
+
+        .option .letter {
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border-radius: 50%;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .option.selected {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .option.selected .letter {
+            background: var(--accent);
+            color: white;
+        }
+
+        .option.correct {
+            border-color: var(--success);
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .option.correct .letter {
+            background: var(--success);
+            color: white;
+        }
+
+        .option.wrong {
+            border-color: var(--danger);
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .option.wrong .letter {
+            background: var(--danger);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+        }
+
+        .result-panel {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .result-score {
+            font-size: 5rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        /* Review List */
+        .review-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .review-item {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            background: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .review-q {
+            font-family: 'Lora', serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: var(--text-main);
+        }
+
+        .review-a {
+            color: var(--success);
+            font-weight: 500;
+        }
+        
+        .hide { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo serif-font">Quiz App</div>
+        <div class="stats">
+            <div>Questions: <span id="db-size">0</span></div>
+            <div>Status: <span style="color: var(--success)">Ready</span></div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Home Screen -->
+        <div id="screen-home" class="screen active">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="font-size: 3rem; margin-bottom: 1rem;">Welcome to Study Mode</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Select a method below to begin practicing your questions.</p>
+            </div>
+
+            <div class="menu-grid">
+                <div class="menu-card" onclick="startMode('learn')">
+                    <h2>Learn Mode</h2>
+                    <p>Answer questions sequentially and receive immediate feedback. Best for initial studying.</p>
+                </div>
+                <div class="menu-card" onclick="startMode('test')">
+                    <h2>Test Mode</h2>
+                    <p>Take a simulated test with random questions. View your score at the end.</p>
+                </div>
+                <div class="menu-card" onclick="startMode('flashcard')">
+                    <h2>Question Bank</h2>
+                    <p>View all questions and correct answers in a list format for quick review.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="screen-quiz" class="screen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem; font-weight: 500;">
+                <span id="q-counter">Question 1 of 10</span>
+                <span id="q-mode">Mode: Learn</span>
+            </div>
+
+            <div class="question-box serif-font" id="question-text">
+                Loading question...
+            </div>
+
+            <div class="options-grid" id="options-container">
+                <!-- Options injected via JS -->
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="goHome()">Exit</button>
+                <button class="btn btn-primary hide" id="btn-next" onclick="nextQuestion()">Next Question &rarr;</button>
+                <button class="btn btn-primary hide" id="btn-submit" onclick="submitTest()">Finish Test</button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="screen-result" class="screen">
+            <div class="result-panel">
+                <h2 style="font-size: 2.2rem; margin-bottom: 1rem;">Test Complete</h2>
+                <div class="result-score serif-font" id="result-score">85%</div>
+                <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 1.1rem;" id="result-text">17 out of 20 correct</p>
+                <button class="btn btn-primary" onclick="goHome()">Return to Dashboard</button>
+            </div>
+            
+            <h3 style="margin-top: 3rem; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 2px solid var(--border-color);">Error Review</h3>
+            <div class="review-list" id="error-list">
+                <!-- Errors injected here -->
+            </div>
+        </div>
+
+        <!-- Review Screen -->
+        <div id="screen-review" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; width: 100%;">
+                <h2 style="font-size: 2rem;">Question Bank</h2>
+                <button class="btn" onclick="goHome()">Back</button>
+            </div>
+            <div class="review-list" id="full-review-list">
+                <!-- All questions injected here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const quizData = "[\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong hình vẽ ở dưới, tầng liên kết dữ liệu (Datalink Layer) xuất hiện ở các khối có đánh số là:\",\n    \"answers\": [\n      \"6, 7, 8, 9, 10\",\n      \"5, 6, 8, 11\",\n      \"3, 10, 13\",\n      \"4, 7, 9, 12\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"4, 7, 9, 12\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Dữ liệu tầng ứng dụng nằm trong phần nào của giao thức tầng giao vận?\",\n    \"answers\": [\n      \"footer\",\n      \"payload\",\n      \"flags\",\n      \"header\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"payload\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi một máy chủ email chuyển tiếp thư tới một máy chủ email khác, việc đóng gói dữ liệu (encapsulation) vào các giao thức sẽ được thực hiện theo thứ tự giao thức đúng nhất là:\",\n    \"answers\": [\n      \"SNMP, TCP, IP, Ethernet\",\n      \"HTTP, SMTP, IP, Ethernet\",\n      \"SMTP, TCP, IP, Ethernet\",\n      \"SNTP, UDP, IP, Ethernet\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"SMTP, TCP, IP, Ethernet\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong mô hình tham chiếu OSI, thành phần nào sau đây nằm ở tầng 3 và thực hiện chức năng chọn đường đi và chuyển tiếp gói tin giữa các nút mạng?\",\n    \"answers\": [\n      \"Datalink layer\",\n      \"Session layer\",\n      \"Network layer\",\n      \"Transport layer\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Network layer\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cho sơ đồ mô tả một gói tin ở tầng liên kết dữ liệu đang được truyền đi từ host tới router, trong đó thông điệp M là đơn vị dữ liệu (PDU) của giao thức tầng ứng dụng. Cho biết H1 là phần header của tầng nào?\",\n    \"answers\": [\n      \"Transport layer\",\n      \"Network layer\",\n      \"Datalink layer\",\n      \"Application layer\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Datalink layer\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong hệ thống DNS, khi cần tìm địa chỉ của máy chủ email thì bản ghi với dạng ánh xạ nào sẽ được sử dụng?\",\n    \"answers\": [\n      \"Type = A\",\n      \"Type = NS\",\n      \"Type = MX\",\n      \"Type = CNAME\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Type = MX\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức lớp ứng dụng nào được sử dụng để lấy thư từ hộp thư trên máy chủ email về máy của người sử dụng, đồng thời xóa thư đó trên máy chủ?\",\n    \"answers\": [\n      \"DHCP\",\n      \"SMTP\",\n      \"POP\",\n      \"IMAP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"POP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"DNS TTL xác định điều gì?\",\n    \"answers\": [\n      \"DNS cách bạn bao xa.\",\n      \"Số bước trong DNS resolution .\",\n      \"Số lần DNS resolution thực hiện trước khi IP phải thay đổi.\",\n      \"Thời gian lưu trữ bộ nhớ đệm của DNS entry.\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Thời gian lưu trữ bộ nhớ đệm của DNS entry.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Loại bản ghi tài nguyên DNS nào sau đây được sử dụng để đặt bí danh cho tên miền (ánh xạ miền đến tên miền khác)\",\n    \"answers\": [\n      \"Bản ghi SRV\",\n      \"Bản ghi CNAME\",\n      \"Bản ghi MX\",\n      \"Bản ghi loại A\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Bản ghi CNAME\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bản ghi tài nguyên loại “NS” chứa thông tin gì trong cơ sở dữ liệu DNS?\",\n    \"answers\": [\n      \"Tên miền và tên của máy chủ SMTP được liên kết với tên miền đó\",\n      \"Tên miền và tên của máy chủ authoritative name cho miền đó\",\n      \"Tên máy chủ và địa chỉ IP\",\n      \"Tên bí danh và tên thật của máy chủ\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tên miền và tên của máy chủ authoritative name cho miền đó\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Để phân giải địa chỉ MAC thành địa chỉ IP ta sử dụng giao thức nào?\",\n    \"answers\": [\n      \"ICMP\",\n      \"NAT\",\n      \"RAPR\",\n      \"DNS\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"RAPR\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cùng với IP address, subnet mask, name server, để có thể hoạt động trên mạng, máy tính cần có thông tin về thành phần nào:\",\n    \"answers\": [\n      \"NTP server\",\n      \"Gateway\",\n      \"FQDN\",\n      \"Proxy\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Gateway\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào được sử dụng với NAT khi cổng nguồn do máy khách chọn cũng là cổng mà bộ định tuyến sử dụng?\",\n    \"answers\": [\n      \"Translation\",\n      \"Forwarding\",\n      \"Preservation\",\n      \"Masquerading\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Preservation\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Dịch vụ chuyển đổi địa chỉ (NAT) có ưu điểm nào sau đây?\",\n    \"answers\": [\n      \"Tiết kiệm địa chỉ, nhiều thiết bị trong mạng sử dụng một địa chỉ IP công cộng để kết nối Internet.\",\n      \"Cải thiện tốc độ truyền dữ liệu bằng cách ẩn đi các địa chỉ IP nội bộ\",\n      \"Loại bỏ sự cần thiết của tường lửa\",\n      \"Đơn giản hóa việc định tuyến mạng bằng cách giảm số lượng tuyến đường\",\n      \"Tất cả các máy tính trong mạng đều được gán một địa chỉ IP thực khác nhau.\",\n      \"Cải thiện bảo mật bằng cách ẩn địa chỉ IP nội bộ\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Tiết kiệm địa chỉ, nhiều thiết bị trong mạng sử dụng một địa chỉ IP công cộng để kết nối Internet.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bước nào sau đây là một bước trong quy trình hoạt động của giao thức DHCP?\",\n    \"answers\": [\n      \"DHCP Identify\",\n      \"DHCP Search\",\n      \"DHCP Locate\",\n      \"DHCP Discover\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"DHCP Discover\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong kịch bản dưới đây, hai máy tính client giao tiếp với một máy chủ bằng cách sử dụng các socket TCP. Cùng một socket tại máy chủ được sử dụng để giao tiếp với hai máy tính client với mã lệnh như trong hình. A, B, C, D là các gói tin ở tầng giao vận. Hãy cho biết giá trị cổng nguồn (source port #) của gói tin D là bao nhiêu?\",\n    \"answers\": [\n      \"6799\",\n      \"5082\",\n      \"5497\",\n      \"6315\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"5082\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thứ tự các cờ TCP tạo nên trong thiết lập kết nối TCP Three-Way Handshake là:\",\n    \"answers\": [\n      \"SYN, FIN, ACK\",\n      \"SYN, ACK, SYN, ACK\",\n      \"SYN, SYN/ACK, ACK\",\n      \"FIN, FIN/ACK, ACK\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"SYN, SYN/ACK, ACK\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi một gói tin UDP tới máy đích, UDP sử dụng thông tin nào để đưa gói tin đó tới socket nhận tương ứng?\",\n    \"answers\": [\n      \"Số hiệu cổng nguồn\",\n      \"Số hiệu cổng đích\",\n      \"Địa chỉ IP nguồn\",\n      \"Tất cả đáp án trên\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Số hiệu cổng đích\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần Số hiệu cổng nguồn (Source port) trong phần đầu TCP segment có độ dài bao nhiêu bit?\",\n    \"answers\": [\n      \"8\",\n      \"16\",\n      \"32\",\n      \"48\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"16\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cổng từ 49152 đến 65535 là:\",\n    \"answers\": [\n      \"Sockets\",\n      \"Ephemeral ports\",\n      \"User ports\",\n      \"System ports\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Ephemeral ports\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Lợi ích nào sau đây là do kỹ thuật CIDR mang lại?\",\n    \"answers\": [\n      \"Phân bổ địa chỉ IP hiệu quả hơn\",\n      \"Đơn giản hóa quy trình định tuyến\",\n      \"Cải thiện an ninh mạng\",\n      \"Giảm nhu cầu sử dụng NAT (Network Address Translation)\",\n      \"Cho phép tạo mặt nạ mạng con có độ dài thay đổi\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Phân bổ địa chỉ IP hiệu quả hơn\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Xác định địa chỉ mạng và địa chỉ broadcast của địa chỉ IP 192.168.10.210 /27\",\n    \"answers\": [\n      \"192.168.10.192 /27 và 192.168.10.223 /27\",\n      \"192.168.10.224 /27 và 192.168.10.223 /27\",\n      \"192.168.10.192 /27 và 192.168.10.224 /27\",\n      \"192.168.10.191 /27 và 192.168.10.223 /27\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"192.168.10.192 /27 và 192.168.10.223 /27\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một máy tính có địa chỉ IP là 10.10.0.100/24. Khi cần quảng bá một gói tin trong mạng, địa chỉ đích được sử dụng có thể là:\",\n    \"answers\": [\n      \"10.10.0.0\",\n      \"10.10.0.255\",\n      \"10.10.255.0\",\n      \"10.10.255.255\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"10.10.0.255\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Tổng số địa chỉ IPv4 xấp xỉ là:\",\n    \"answers\": [\n      \"100 tỷ\",\n      \"4,2 nghìn tỷ\",\n      \"4,2 triệu\",\n      \"4,2 tỷ\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"4,2 tỷ\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Ai được phép sử dụng không gian địa chỉ IP không định tuyến (non-routable address space) ?\",\n    \"answers\": [\n      \"IETF\",\n      \"Bất kỳ ai\",\n      \"IANA\",\n      \"Chỉ dùng cho mục đích thử nghiệm\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Bất kỳ ai\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một máy tính có địa chỉ IP là 132.16.8.132/25. Giá trị của địa chỉ mạng của máy tính này là\",\n    \"answers\": [\n      \"132.16.8.128/25\",\n      \"132.16.8.0/25\",\n      \"132.16.0.0/25\",\n      \"132.16.1.1/25\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"132.16.8.128/25\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cùng với IP address, subnet mask, name server, để máy tính có thể hoạt động trên mạng cần có thông tin về:\",\n    \"answers\": [\n      \"NTP server\",\n      \"Gateway\",\n      \"FQDN\",\n      \"Proxy\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Gateway\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bộ định tuyến đang thực hiện các chức năng định tuyến cơ bản. Bước đầu tiên trong quá trình truyền gói tin là gì?\",\n    \"answers\": [\n      \"Bộ định tuyến nhận gói dữ liệu.\",\n      \"Kiểm tra bảng định tuyến.\",\n      \"Gửi phản hồi ARP.\",\n      \"Bộ định tuyến kiểm tra địa chỉ IP đích của gói tin này.\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Bộ định tuyến nhận gói dữ liệu.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào cung cấp khả năng chuyển đổi từ địa chỉ IP sang địa chỉ vật lý?\",\n    \"answers\": [\n      \"DNS\",\n      \"ICMP\",\n      \"ARP\",\n      \"IGRP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"ARP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Gói tin IPv6 được phép phân mảnh tại:\",\n    \"answers\": [\n      \"Nút gửi\",\n      \"Router trung gian\",\n      \"Cả nút gửi và router trung gian\",\n      \"Không được phép phân mảnh\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Nút gửi\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào thường được các ISP sử dụng để kết nối nhiều hệ thống khác nhau qua mạng diện rộng (WAN)?\",\n    \"answers\": [\n      \"HTTP (Hypertext Transfer Protocol)\",\n      \"FTP (File Transfer Protocol)\",\n      \"BGP (Border Gateway Protocol)\",\n      \"SMTP (Simple Mail Transfer Protocol)\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"BGP (Border Gateway Protocol)\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào cho phép cấu hình các gói tin với giá trị destination port nào đó luôn chuyển tới nút cụ thể nào đó?\",\n    \"answers\": [\n      \"Ephemeral ports\",\n      \"Port forwarding\",\n      \"IP translation\",\n      \"IP masquerading\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Port forwarding\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trường thông tin nào trong gói tin IPv4 được sử dụng để chỉ ra rằng datagram được phép phân mảnh hoặc để chỉ ra rằng datagram đã bị phân mảnh.\",\n    \"answers\": [\n      \"Trường flag\",\n      \"Trường total length\",\n      \"Trường fragmentation offset\",\n      \"Trường service type\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Trường flag\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Loại cáp mạng nào được sử dụng phổ biến nhất để kết nối các thiết bị máy tính?\",\n    \"answers\": [\n      \"Cáp nguồn\",\n      \"Cáp VGA\",\n      \"Cáp SATA\",\n      \"Cáp Twisted Pair\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Cáp Twisted Pair\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào cần thiết để thiết lập kết nối không dây?\",\n    \"answers\": [\n      \"Ethernet Switch/Hub\",\n      \"Wireless Access Point\",\n      \"Modem\",\n      \"DSL Splitter\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Wireless Access Point\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Loại công nghệ nào sau đây KHÔNG được sử dụng cho kết nối Internet?\",\n    \"answers\": [\n      \"�WiFi\",\n      \"ADSL\",\n      \"Satellite\",\n      \"NFC\",\n      \"Fiber Optic\",\n      \"Dial-Up\",\n      \"Bluetooth\"\n    ],\n    \"correctIndex\": 6,\n    \"correctText\": \"Bluetooth\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào có chức năng gửi tín hiệu giữa các thiết bị?\",\n    \"answers\": [\n      \"Điều chế\",\n      \"Tầng mạng\",\n      \"Tầng vật lý\",\n      \"Tầng liên kết dữ liệu\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Tầng vật lý\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Lợi thế nào sau đây là đáng kể khi so sánh công nghệ Internet băng rộng với kết nối Internet qua đường Dial-up?\",\n    \"answers\": [\n      \"Tốc độ truyền dữ liệu cao hơn\",\n      \"Chi phí lắp đặt thấp hơn\",\n      \"Khả năng tương thích tốt hơn với các máy tính cũ\",\n      \"Dễ thiết lập và cấu hình hơn\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Tốc độ truyền dữ liệu cao hơn\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức ứng dụng nào cho phép bảo mật dữ liệu theo mặc định?\",\n    \"answers\": [\n      \"HTTP\",\n      \"HTTPS\",\n      \"DNS\",\n      \"FTP\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"HTTPS\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào sau đây là chính xác về vai trò và hoạt động của thiết bị tường lửa (firewall) trong an ninh mạng?\",\n    \"answers\": [\n      \"Tường lửa chỉ có hiệu quả ở lớp ứng dụng\",\n      \"Tường lửa có thể được cấu hình để chặn các địa chỉ IP và cổng cụ thể\",\n      \"Tường lửa đảm bảo rằng không có lưu lượng độc hại nào xâm nhập vào mạng\",\n      \"Tường lửa thay thế nhu cầu về phần mềm chống vi-rút\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tường lửa có thể được cấu hình để chặn các địa chỉ IP và cổng cụ thể\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào sau đây KHÔNG thuộc Tầng ứng dụng theo mô hình OSI?\",\n    \"answers\": [\n      \"HTTP\",\n      \"FTP\",\n      \"TCP\",\n      \"SMTP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"TCP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào sau đây hỗ trợ chức năng điều khiển luồng (Flow Control) và điều khiển tắc nghẽn (Congestion Control):\",\n    \"answers\": [\n      \"ARP\",\n      \"TCP\",\n      \"UDP\",\n      \"ICMP\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"TCP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào là giao thức không liên kết (connectionless)\",\n    \"answers\": [\n      \"TCP\",\n      \"SMTP\",\n      \"UDP\",\n      \"HTTP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"UDP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Loại bản ghi tài nguyên DNS nào sau đây chỉ định các dịch vụ được cung cấp bởi một miền, cùng với cổng và máy chủ đích.\",\n    \"answers\": [\n      \"Bản ghi loại A\",\n      \"Bản ghi MX\",\n      \"Bản ghi CNAME\",\n      \"Bản ghi SRV\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Bản ghi SRV\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Máy chủ nào cung cấp ánh xạ từ authoritative hostname sang IP?\",\n    \"answers\": [\n      \"Local DNS server\",\n      \"DNS root servers\",\n      \"Top Level Domain (TLD) servers\",\n      \"Authoritative DNS server\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Authoritative DNS server\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"DNS thường sử dụng giao thức tầng giao vận nào?\",\n    \"answers\": [\n      \"UDP\",\n      \"IP\",\n      \"TCP\",\n      \"ICMP\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"UDP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Đặc điểm của TCP socket là gì?\",\n    \"answers\": [\n      \"Cung cấp dịch vụ truyền dữ liệu tin cậy, có thứ tự byte-stream từ máy khách tới máy chủ\",\n      \"Cung cấp dịch vụ truyền dữ liệu không tin cậy từ máy khách tới máy chủ\",\n      \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket\",\n      \"Cung cấp truyền dữ liệu tin cậy, có thứ tự byte-stream từ máy khách tới máy chủ\",\n      \"Cung cấp truyền dữ liệu không tin cậy từ máy khách tới máy chủ\",\n      \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket mà không phải tạo liên kết.\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Cung cấp truyền dữ liệu tin cậy, có thứ tự byte-stream từ máy khách tới máy chủ\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Công nghệ nào sau đây giúp quản lý không gian địa chỉ IP và góp phần tăng cường bảo mật cho mạng nội bộ?\",\n    \"answers\": [\n      \"ARP - Address Resolution Protocol\",\n      \"NAT - Network Address Translation\",\n      \"FTP - File Transfer Protocol\",\n      \"SMTP - Simple Mail Transfer Protocol\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"NAT - Network Address Translation\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Để phân giải địa chỉ IP thành địa chỉ MAC, ta sử dụng giao thức nào?\",\n    \"answers\": [\n      \"ICMP\",\n      \"ARP\",\n      \"RAPR\",\n      \"DNS\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"ARP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kết nối đã bị chấm dứt và không thể giao tiếp được. Trạng thái socket của TCP là:\",\n    \"answers\": [\n      \"CLOSED\",\n      \"FINISHED\",\n      \"CLOSE_WAIT\",\n      \"FIN_WAIT\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"CLOSED\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thuật ngữ nào sau đây KHÔNG liên quan đến quá trình truyền - nhận dữ liệu của TCP?\",\n    \"answers\": [\n      \"SYN_RECEIVED\",\n      \"FIN_WAIT\",\n      \"HTTP status code\",\n      \"SYN flag\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"HTTP status code\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một thiết bị có kết nối TCP đã sẵn sàng đóng kết nối. Thiết bị khác trong kết nối đồng ý. Điều gì đã xảy ra?\",\n    \"answers\": [\n      \"Four-way handshake\",\n      \"Three-way handshake\",\n      \"Two-way handshake\",\n      \"Handshake\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Four-way handshake\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Hình dưới biểu diễn kích thước cửa sổ cwnd theo thời gian khi triển khai giao thức TCP Reno. Hãy cho biết những giai đoạn truyền nào nằm trong giai đoạn khởi đầu chậm (slow start)?\",\n    \"answers\": [\n      \"AB và BC\",\n      \"AB và FG\",\n      \"AB và DE\",\n      \"DE và FG\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"AB và FG\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi một ứng dụng sử dụng UDP socket, UDP cung cấp dịch vụ truyền tải nào cho ứng dụng?\",\n    \"answers\": [\n      \"Điều khiển tắc nghẽn: Dịch vụ sẽ kiểm soát người gửi để người gửi không gửi nhiều dữ liệu hơn mức mà các liên kết trong mạng có thể xử lý\",\n      \"Truyền dữ liệu không bị mất: Dịch vụ sẽ truyền tất cả dữ liệu đến người nhận một cách tin cậy, khôi phục từ các gói bị loại bỏ do tràn bộ đệm tại thiết bị định tuyến\",\n      \"Điều khiển luồng: Dịch vụ đảm bảo rằng người gửi không gửi quá nhanh đến mức làm tràn bộ đệm của người nhận\",\n      \"Dịch vụ best effort: Dịch vụ xử lý tốt nhất có thể để chuyển dữ liệu đến đích nhưng không đảm bảo rằng dữ liệu sẽ thực sự đến đích.\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Dịch vụ best effort: Dịch vụ xử lý tốt nhất có thể để chuyển dữ liệu đến đích nhưng không đảm bảo rằng dữ liệu sẽ thực sự đến đích.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cho địa chỉ IP 140.16.10.123/28 phát biểu nào sau đây là đúng?\",\n    \"answers\": [\n      \"Chỉ dùng trong mạng LAN do đây là dạng địa chỉ private\",\n      \"Đây là địa chỉ thuộc dạng địa chỉ quảng bá\",\n      \"Nằm trong mạng có địa chỉ 140.16.10.112/28\",\n      \"Phần HostID có độ dài 28 bits\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Nằm trong mạng có địa chỉ 140.16.10.112/28\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Địa chỉ IPv4 đặc biệt nào được sử dụng để chỉ đến chính thiết bị mà bạn đang sử dụng (địa chỉ loopback)\",\n    \"answers\": [\n      \"192.168.0.1\",\n      \"10.10.0.1\",\n      \"127.0.0.1\",\n      \"172.16.0.1\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"127.0.0.1\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong hoạt động của Internet Protocol, giao thức nào được sử dụng để thông báo lỗi đến nút nguồn?\",\n    \"answers\": [\n      \"ICMP\",\n      \"ARP\",\n      \"RAPR\",\n      \"DNS\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"ICMP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thiết bị nào sau đây chuyển tiếp lưu lượng giữa các mạng khác nhau?\",\n    \"answers\": [\n      \"Switch\",\n      \"Router\",\n      \"Client\",\n      \"Hub\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Router\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Nếu kiểm tra checksum của gói tin IPv4 không khớp tại tầng mạng, điều gì sẽ xảy ra với dữ liệu?\",\n    \"answers\": [\n      \"Dữ liệu sẽ được gửi trở lại nút gửi kèm theo lỗi.\",\n      \"Nó sẽ được gửi đi, nhưng có thể bị lỗi.\",\n      \"Dữ liệu sẽ bị loại bỏ\",\n      \"Dữ liệu sẽ được gửi lại\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Dữ liệu sẽ bị loại bỏ\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Tầng nào của mô hình mạng TCP/IP bao gồm các thông số kỹ thuật cho phương tiện truyền và cách tín hiệu được gửi qua các phương tiện truyền này?\",\n    \"answers\": [\n      \"Tầng giao vận\",\n      \"Tầng mạng\",\n      \"Tầng vật lý\",\n      \"Tầng liên kết dữ liệu\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Tầng vật lý\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Công nghệ nào KHÔNG thuộc các công nghệ cốt lõi trong quá trình phát triển từ mạng máy tính ban đầu sang Internet quay số?\",\n    \"answers\": [\n      \"Public Switched Telephone Network (PSTN)\",\n      \"Packet Switching\",\n      \"Modem\",\n      \"LAN Ethernet\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"LAN Ethernet\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức HTTPS (Hypertext Transfer Protocol Secure) hoạt động trên cổng nào sau đây?\",\n    \"answers\": [\n      \"20\",\n      \"21\",\n      \"80\",\n      \"443\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"443\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Tầng nào trong mô hình TCP/IP năm tầng xử lý cáp và đầu nối?\",\n    \"answers\": [\n      \"Tầng vật lý\",\n      \"Tầng mạng\",\n      \"Tầng giao vận\",\n      \"Tầng ứng dụng\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Tầng vật lý\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần hoạt động ở tầng ứng dụng là:\",\n    \"answers\": [\n      \"TCP\",\n      \"Web browser\",\n      \"UDP\",\n      \"Router\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Web browser\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một HTTP message có thể được xử lý tại các thiết bị nào sau đây.\",\n    \"answers\": [\n      \"Access Point\",\n      \"Router\",\n      \"Switch\",\n      \"Proxy\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Proxy\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào sau đây là đúng về mối quan hệ giữa dịch vụ DNS và giao thức UDP?\",\n    \"answers\": [\n      \"DNS sử dụng UDP cho các truy vấn của nó để bảo đảm thứ tự truyền của các truy vấn đó.\",\n      \"DNS sử dụng UDP vì lý do an toàn\",\n      \"Các truy vấn DNS có thể được gửi qua TCP trong các tình huống nhất định\",\n      \"UDP cho phép việc truyền nhận các gói tin DNS là bảo đảm, tin cậy.\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Các truy vấn DNS có thể được gửi qua TCP trong các tình huống nhất định\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào sau đây là KHÔNG ĐÚNG về mối quan hệ giữa dịch vụ DNS và các giao thức UDP, TCP?\",\n    \"answers\": [\n      \"DNS sử dụng UDP cho các truy vấn của nó để truyền dữ liệu nhanh hơn\",\n      \"UDP là một giao thức không liên kết\",\n      \"DNS sử dụng UDP vì lý do an toàn\",\n      \"Các truy vấn DNS có thể được gửi qua TCP trong các tình huống phức tạp nhất định\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"DNS sử dụng UDP vì lý do an toàn\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một thiết bị có khả năng chặn lưu lượng truy cập đáp ứng các tiêu chí nhất định được gọi là:\",\n    \"answers\": [\n      \"Switch\",\n      \"Firewall\",\n      \"Hub\",\n      \"Router\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Firewall\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Người dùng yêu cầu một trang web không mã hóa từ một máy chủ web đang chạy và lắng nghe trên địa chỉ IP 10.1.1.150. Địa chỉ socket sẽ là gì?\",\n    \"answers\": [\n      \"10.1.1.150.21\",\n      \"10.1.1.150:80\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"10.1.1.150:80\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào cho phép nhiều thiết bị trên mạng cục bộ chia sẻ một địa chỉ IP công cộng duy nhất?\",\n    \"answers\": [\n      \"Mạng riêng ảo (VPN)\",\n      \"Hệ thống tên miền (DNS)\",\n      \"Giao thức cấp phát địa chỉ IP động (DHCP)\",\n      \"Dịch vụ chuyển đổi địa chỉ mạng (NAT)\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Dịch vụ chuyển đổi địa chỉ mạng (NAT)\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào sau đây KHÔNG thuộc phần đầu gói tin TCP?\",\n    \"answers\": [\n      \"Urgent Pointer\",\n      \"Sequence Number\",\n      \"Acknowledge Number\",\n      \"Destination IP Address\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Destination IP Address\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Ứng dụng sử dụng phần nào của hệ điều hành để thực hiện thiết lập kết nối TCP?\",\n    \"answers\": [\n      \"Networking stack\",\n      \"ARP message\",\n      \"Source port\",\n      \"Router\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Networking stack\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong kịch bản dưới đây, hai máy tính client giao tiếp với một máy chủ bằng cách sử dụng các socket TCP. Cùng một socket tại máy chủ được sử dụng để giao tiếp với hai máy tính client với mã lệnh như trong hình. A, B, C, D là các gói tin ở tầng giao vận. Hãy cho biết giá trị cổng nguồn (source port #) của gói tin B là bao nhiêu?\",\n    \"answers\": [\n      \"6799\",\n      \"5082\",\n      \"5497\",\n      \"6315\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"5497\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào không phải là một đặc điểm thiết kế của giao thức TCP?\",\n    \"answers\": [\n      \"Three-way handshake\",\n      \"Flow control\",\n      \"IP masking\",\n      \"Congestion control\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"IP masking\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cho địa chỉ IP 132.25.32.123/28 phát biểu nào sau đây là đúng?\",\n    \"answers\": [\n      \"Chỉ dùng trong mạng LAN do đây là dạng địa chỉ private\",\n      \"Phần NetworkID có độ dài 28 bits\",\n      \"Đây là địa chỉ thuộc dạng địa chỉ quảng bá\",\n      \"Phần NetworkID có độ dài 4 bits\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Phần NetworkID có độ dài 28 bits\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Địa chỉ IP nào có cùng NetworkID với địa chỉ 190.32.100.1 /20?\",\n    \"answers\": [\n      \"190.32.110.1 /20\",\n      \"190.32.120.1 /20\",\n      \"190.32.130.1 /20\",\n      \"190.32.140.1 /20\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"190.32.110.1 /20\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào truyền dữ liệu giữa các edge router của các autonomous system?\",\n    \"answers\": [\n      \"Interior gateway\",\n      \"Distance-vector\",\n      \"Link state\",\n      \"Exterior gateway\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Exterior gateway\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một công ty di chuyển một website sang một máy chủ web mới, điều nào sau đây sẽ thay đổi?\",\n    \"answers\": [\n      \"Network service\",\n      \"Domain name\",\n      \"IP �Address\",\n      \"Root name server\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"IP �Address\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giải pháp nào khác để giải quyết tình trạng cạn kiệt IP và tạo ra nhiều địa chỉ public IP hơn?\",\n    \"answers\": [\n      \"RFC1918\",\n      \"IP masquerading\",\n      \"Port preservation\",\n      \"IPv6\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"IPv6\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Loại cáp xoắn đôi nào thường được sử dụng cho mạng GigaEthernet?\",\n    \"answers\": [\n      \"CAT 3\",\n      \"CAT 4\",\n      \"CAT 5E\",\n      \"CAT6a\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"CAT 5E\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bất kể thiết bị được sử dụng ở đâu, địa chỉ nào sẽ giữ nguyên bất kể nó được kết nối vào các mạng khác nhau?\",\n    \"answers\": [\n      \"Physical, or MAC address\",\n      \"EIN serial\",\n      \"Dynamic IP address\",\n      \"Static IP address\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Physical, or MAC address\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"VPN thường sử dụng một quy trình xác thực yêu cầu người dùng tạo một mã thông báo số tồn tại trong thời gian ngắn thông qua một phần mềm hoặc phần cứng chuyên dụng, ngoài việc cung cấp tên người dùng và mật khẩu. Quy trình xác thực này được gọi là gì?\",\n    \"answers\": [\n      \"Certificate-based authentication\",\n      \"Password-based authentication\",\n      \"Two-factor authentication\",\n      \"Biometric authentication\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Two-factor authentication\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Có bao nhiêu lớp trong mô hình tham chiếu OSI?\",\n    \"answers\": [\n      \"4\",\n      \"5\",\n      \"6\",\n      \"7\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"7\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Mô tả nào sau đây là đúng nhất về quá trình đóng gói dữ liệu trong các giao thức mạng?\",\n    \"answers\": [\n      \"Đóng gói là phương pháp nén dữ liệu để truyền tải hiệu quả.\",\n      \"Đóng gói liên quan đến việc gói dữ liệu với thông tin giao thức ở mỗi lớp.\",\n      \"Đóng gói là quá trình phân đoạn dữ liệu thành các phần nhỏ hơn.\",\n      \"Đóng gói liên quan đến việc mã hóa dữ liệu cho mục đích bảo mật.\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Đóng gói liên quan đến việc gói dữ liệu với thông tin giao thức ở mỗi lớp.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Câu nào sau đây là phát biểu đúng nhất về địa chỉ IP?\",\n    \"answers\": [\n      \"Một chuỗi ký tự duy nhất cho phép xác định máy tính sử dụng giao thức IP trong giao tiếp qua mạng.\",\n      \"Một giao thức được sử dụng để truyền tệp từ máy chủ này sang máy chủ khác qua mạng dựa trên TCP\",\n      \"Một thiết bị phần cứng giúp định tuyến dữ liệu từ mạng cục bộ sang mạng khác\",\n      \"Một bộ quy tắc quy định khuôn dạng dữ liệu được gửi qua Internet\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Một chuỗi ký tự duy nhất cho phép xác định máy tính sử dụng giao thức IP trong giao tiếp qua mạng.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức lớp ứng dụng nào được sử dụng để lấy thư từ hộp thư trên máy chủ email về máy của người sử dụng, nhưng vẫn cho phép giữ bản sao của thư đó trên máy chủ?\",\n    \"answers\": [\n      \"DHCP\",\n      \"SMTP\",\n      \"POP\",\n      \"IMAP\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"IMAP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Máy chủ nào ở vị trí cao nhất trong phân cấp máy chủ DNS và có thể liên lạc với các máy chủ quản lý các domain (ví dụ: *.com, *.edu)?\",\n    \"answers\": [\n      \"Local DNS server\",\n      \"DNS root servers\",\n      \"Top Level Domain (TLD) servers\",\n      \"Authoritative DNS server\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"DNS root servers\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Máy chủ nào quản lý một domain (ví dụ: *.com, *.edu) và có thể liên lạc với các authoritative DNS server?\",\n    \"answers\": [\n      \"Local DNS server\",\n      \"DNS root servers\",\n      \"Top Level Domain (TLD) servers\",\n      \"Authoritative DNS server\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Top Level Domain (TLD) servers\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức lớp ứng dụng nào được sử dụng để gửi thư từ máy khách tới máy chủ email?\",\n    \"answers\": [\n      \"SNMP\",\n      \"SMTP\",\n      \"POP\",\n      \"IMAP\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"SMTP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào được sử dụng để cân bằng lưu lượng truy cập trên nhiều IP cho cùng một tên miền?\",\n    \"answers\": [\n      \"CNAME\",\n      \"Round robin\",\n      \"Cycling records\",\n      \"Quad A record\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Round robin\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào sau đây cho phép gateway thay đổi IP nguồn của một datagram gửi đi?\",\n    \"answers\": [\n      \"IANA\",\n      \"NAT\",\n      \"IPv4\",\n      \"IPv6\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"NAT\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"DHCP là giao thức thuộc tầng nào?\",\n    \"answers\": [\n      \"Tầng mạng\",\n      \"Tầng vật lý\",\n      \"Tầng giao vận\",\n      \"Tầng ứng dụng\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Tầng ứng dụng\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong giao thức tầng giao vận TCP, mục đích của việc bắt tay ba bước (Three-way hand shake) là gì?\",\n    \"answers\": [\n      \"Để thiết lập kết nối tin cậy giữa máy khách và máy chủ\",\n      \"Để ghép kênh và phân tách luồng dữ liệu\",\n      \"Để đóng gói dữ liệu của gói tin IP trong một khung Ethernet\",\n      \"Để phân biệt giữa các giao thức hướng liên kết và không liên kết.\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Để thiết lập kết nối tin cậy giữa máy khách và máy chủ\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Địa chỉ IP nào sau đây là địa chỉ mạng?\",\n    \"answers\": [\n      \"192.168.1.12/24\",\n      \"172.64.0.0/12\",\n      \"203.168.32.1/28\",\n      \"172.32.3.231/21\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"172.64.0.0/12\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một máy tính có địa chỉ IP là 192.168.8.34 và địa chỉ subnet mask là 255.255.0.0. Phần nào của subnet mask biểu thị subnet ID?\",\n    \"answers\": [\n      \"192.168.0.254\",\n      \"Hai octet đầu tiên của subnet mask, 255.255\",\n      \"255.255.0.1\",\n      \"Hai octet cuối cùng của mặt nạ mạng con, 0.0\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Hai octet đầu tiên của subnet mask, 255.255\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Địa chỉ IP nào sau đây là địa chỉ có thể gán hợp lệ cho một nút mạng?\",\n    \"answers\": [\n      \"172.64.0.0/12\",\n      \"192.168.1.64/26\",\n      \"203.168.32.1/28\",\n      \"172.32.3.231/21\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"172.32.3.231/21\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Các giao thức định tuyến nội vùng (Interior gateway protocols) được bộ định tuyến sử dụng để chia sẻ thông tin trong ...\",\n    \"answers\": [\n      \"autonomous system\",\n      \"collision domain\",\n      \"subnet\",\n      \"destination network\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"autonomous system\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Mục đích chính của Mạng riêng ảo (VPN) là gì?\",\n    \"answers\": [\n      \"Để giám sát hoạt động của nhân viên khi họ làm việc trực tuyến\",\n      \"Để tăng tốc độ kết nối Internet\",\n      \"Để chặn quảng cáo không mong muốn\",\n      \"Để cung cấp quyền truy cập từ xa an toàn vào tài nguyên của tổ chức\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Để cung cấp quyền truy cập từ xa an toàn vào tài nguyên của tổ chức\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào sau đây KHÔNG hoạt động ở tầng ứng dụng theo mô hình OSI?\",\n    \"answers\": [\n      \"POP\",\n      \"FTP\",\n      \"ICMP\",\n      \"SMTP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"ICMP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Cho sơ đồ mô tả một gói tin ở tầng liên kết dữ liệu đang được truyền đi từ host tới router, trong đó thông điệp M là đơn vị dữ liệu (PDU) của giao thức tầng ứng dụng. Cho biết H3 là phần header của tầng nào?\",\n    \"answers\": [\n      \"Transport layer\",\n      \"Application layer\",\n      \"Network Layer\",\n      \"Link layer\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Transport layer\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Lợi ích của caching trong local DNS server:\",\n    \"answers\": [\n      \"Bộ đệm DNS cung cấp quyền truy cập ưu tiên vào máy chủ gốc vì yêu cầu DNS đến từ bộ đệm DNS cục bộ\",\n      \"Bộ nhớ đệm DNS đóng vai trò là máy chủ authoritative name cho nhiều tổ chức\",\n      \"Bộ đệm DNS giúp tăng khả năng bảo mật trong DNS\",\n      \"Bộ đệm DNS cung cấp phản hồi nhanh hơn và giảm tải ở những máy chủ khác trong DNS, nếu tìm thấy câu trả lời cho truy vấn trong bộ đệm\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Bộ đệm DNS cung cấp phản hồi nhanh hơn và giảm tải ở những máy chủ khác trong DNS, nếu tìm thấy câu trả lời cho truy vấn trong bộ đệm\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bản ghi DNS kiểu A chứa thông tin gì?\",\n    \"answers\": [\n      \"Một địa chỉ IPv6\",\n      \"Một CNAME\",\n      \"Một địa chỉ IPv4\",\n      \"Một SOA\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Một địa chỉ IPv4\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi một ứng dụng sử dụng TCP socket, TCP cung cấp dịch vụ truyền tải nào cho ứng dụng?\",\n    \"answers\": [\n      \"Truyền theo thời gian thực: Dịch vụ đảm bảo rằng dữ liệu sẽ được gửi đến người nhận trong một khoảng thời gian nhất định.\",\n      \"Truyền dữ liệu không bị mất: Dịch vụ truyền tất cả dữ liệu đến người nhận một cách tin cậy, khôi phục từ các gói bị loại bỏ do tràn bộ đệm tại bộ định tuyến\",\n      \"Đảm bảo thông lượng: Dịch vụ đảm bảo thông lượng tối thiểu giữa người gửi và người nhận.\",\n      \"Dịch vụ best effort. Dịch vụ sẽ xử lý tốt nhất có thể để chuyển dữ liệu đến đích nhưng không đảm bảo rằng dữ liệu sẽ thực sự đến đích.\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Truyền dữ liệu không bị mất: Dịch vụ truyền tất cả dữ liệu đến người nhận một cách tin cậy, khôi phục từ các gói bị loại bỏ do tràn bộ đệm tại bộ định tuyến\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một sinh viên mang laptop đến trường đại học Phenikaa để sử dụng mạng wifi. Để có địa chỉ IP kết nối mạng, máy tính sẽ gửi yêu cầu dưới dạng truyền thông nào để xin cấp phát địa chỉ IP động?\",\n    \"answers\": [\n      \"Unicast\",\n      \"Anycast\",\n      \"Broadcast\",\n      \"Multicast\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Broadcast\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong tầng giao vận, các cổng từ 0-1023 được gọi là gì:\",\n    \"answers\": [\n      \"Sockets\",\n      \"Output ports\",\n      \"Reserved ports\",\n      \"Well known ports\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Well known ports\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức TCP thường gửi các segment theo thứ tự nào?\",\n    \"answers\": [\n      \"Ngẫu nhiên\",\n      \"Tuần tự\",\n      \"Từ segment kích thước lớn nhất đến nhỏ nhất\",\n      \"Ưu tiên\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tuần tự\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Điều nào sau đây giải thích rõ nhất vai trò của modem trong mạng máy tính?\",\n    \"answers\": [\n      \"Modem chuyển đổi tín hiệu số từ máy tính thành tín hiệu tương tự để gửi lên đường truyền vật lý.\",\n      \"Modem khuếch đại tín hiệu để mở rộng phạm vi truyền dữ liệu.\",\n      \"Modem nén dữ liệu để tăng tốc độ truyền qua mạng.\",\n      \"Modem quản lý việc định tuyến các gói dữ liệu trên các mạng.\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Modem chuyển đổi tín hiệu số từ máy tính thành tín hiệu tương tự để gửi lên đường truyền vật lý.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào sau đây được sử dụng để truyền tệp qua Internet một cách an toàn?\",\n    \"answers\": [\n      \"FTP\",\n      \"SSH\",\n      \"FTPS\",\n      \"HTTP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"FTPS\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Chức năng nào sau đây là chức năng của Tầng mạng trong mô hình OSI?\",\n    \"answers\": [\n      \"Phát hiện và phục hồi lỗi\",\n      \"Chọn đường và chuyển tiếp gói tin\",\n      \"Kiểm soát lưu lượng mạng\",\n      \"Mã hóa dữ liệu\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Chọn đường và chuyển tiếp gói tin\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Người dùng yêu cầu một trang web không mã hóa từ một máy chủ web đang hoạt động và lắng nghe trên địa chỉ IP 10.1.1.150. Địa chỉ socket sẽ là gì?\",\n    \"answers\": [\n      \"10.1.1.150.21\",\n      \"10.1.1.150:80\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"10.1.1.150:80\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"DHCP thực hiện vai trò nào sau đây trong mạng?\",\n    \"answers\": [\n      \"Mã hóa các gói dữ liệu để bảo mật\",\n      \"Định tuyến các gói dữ liệu giữa các mạng\",\n      \"Gán địa chỉ IP cho các thiết bị trong mạng, đơn giản hóa việc quản trị mạng.\",\n      \"Giám sát lưu lượng mạng để phát hiện sự bất thường\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Gán địa chỉ IP cho các thiết bị trong mạng, đơn giản hóa việc quản trị mạng.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Để tối đa hóa việc sử dụng các địa chỉ IP hạn chế, giải pháp nào sau đây thường được sử dụng?\",\n    \"answers\": [\n      \"NAT\",\n      \"DHCP\",\n      \"NAT, DHCP\",\n      \"Không có đáp án nào ở trên\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"NAT, DHCP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào là đúng về mục đích của dịch vụ NAT - Network Address Translation trong mạng?\",\n    \"answers\": [\n      \"Để cho phép nhiều thiết bị trong mạng cục bộ chia sẻ một địa chỉ IP công cộng duy nhất\",\n      \"Để gán một địa chỉ IP công cộng duy nhất cho từng thiết bị trong mạng\",\n      \"Để mã hóa dữ liệu được truyền qua mạng\",\n      \"Để ưu tiên một số loại lưu lượng mạng nhất định theo cơ chế QoS\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Để cho phép nhiều thiết bị trong mạng cục bộ chia sẻ một địa chỉ IP công cộng duy nhất\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thuật ngữ nào sau đây KHÔNG liên quan đến quá trình truyền - nhận dữ liệu của giao thức TCP?\",\n    \"answers\": [\n      \"SYN flag\",\n      \"SYN_SENT\",\n      \"SYN_RECEIVED\",\n      \"Network switch\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Network switch\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Đâu là một địa chỉ IP dạng quảng bá\",\n    \"answers\": [\n      \"10.10.10. 47/28\",\n      \"10.10.10. 46/28\",\n      \"10.10.10. 45/28\",\n      \"10.10.10. 44/28\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"10.10.10. 47/28\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Chọn thứ tự đúng từ tầng 1 tới tầng 5 của mô hình mạng năm tầng TCP/IP.\",\n    \"answers\": [\n      \"Tầng vật lý > Tầng mạng > Tầng liên kết dữ liệu > Tầng giao vận > Tầng ứng dụng\",\n      \"Tầng vật lý > Tầng ứng dụng > Tầng liên kết dữ liệu > Tầng mạng > Tầng giao vận\",\n      \"Tầng vật lý > Tầng liên kết dữ liệu > Tầng giao vận > Tầng mạng > Tầng ứng dụng\",\n      \"Tầng vật lý > Tầng liên kết dữ liệu > Tầng mạng > Tầng giao vận > Tầng ứng dụng.\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Tầng vật lý > Tầng liên kết dữ liệu > Tầng mạng > Tầng giao vận > Tầng ứng dụng.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong mô hình tham chiếu TCP/IP, tên gọi nào được sử dụng cho thiết bị A kết nối hai đoạn mạng LAN như hình dưới?\",\n    \"answers\": [\n      \"Bridge\",\n      \"Repeater hub\",\n      \"Router\",\n      \"Switching hub\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Router\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Kỹ thuật nào sau đây có thể được sử dụng để chuyển đổi từ IPv4 sang IPv6?\",\n    \"answers\": [\n      \"Network address translation\",\n      \"Dynamic host configuration protocol\",\n      \"IP tunneling\",\n      \"Tất cả các câu trên\",\n      \"Address Resolution Protocol\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"IP tunneling\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Để tối đa hóa việc sử dụng các địa chỉ IP hạn chế, giao thức nào sau đây thường được sử dụng?\",\n    \"answers\": [\n      \"NAT\",\n      \"DHCP\",\n      \"NAT, DHCP\",\n      \"Không có đáp án nào ở trên\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"NAT, DHCP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Đặc điểm nào sau đây là đúng cho mạng LAN ảo (Virtual LAN)?\",\n    \"answers\": [\n      \"Tăng lưu lượng phải truyền đi trong các mạng con\",\n      \"Cải thiện an ninh mạng\",\n      \"Yêu cầu sử dụng giao thức TCP để tăng độ tin cậy\",\n      \"Cho phép các thiết bị trên các VLAN khác nhau giao tiếp mà không cần bộ định tuyến\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Cải thiện an ninh mạng\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một trong những công nghệ đầu tiên sử dụng 2FA (Two-Factor Authentication) là gì?\",\n    \"answers\": [\n      \"TCP\",\n      \"DNS\",\n      \"VPN\",\n      \"UDP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"VPN\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trong hệ thống DNS, khi cần tìm danh sách các máy chủ tên miền phụ trách một domain thì bản ghi với dạng ánh xạ nào sẽ được sử dụng?\",\n    \"answers\": [\n      \"Type = A\",\n      \"Type = NS\",\n      \"Type = MX\",\n      \"Type = CNAME\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Type = NS\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Quá trình mà máy khách sử dụng DHCP để tìm kiếm thông tin cấu hình mạng được gọi là:\",\n    \"answers\": [\n      \"DHCP Request\",\n      \"DHCP Offer\",\n      \"DHCP Discovery\",\n      \"DHCP Acknowledgement\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"DHCP Discovery\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi một máy chủ web phản hồi cho trình duyệt, việc đóng gói dữ liệu (encapsulation) vào các giao thức sẽ được thực hiện theo thứ tự giao thức đúng nhất là:\",\n    \"answers\": [\n      \"DNS, HTTP, TCP, Ethernet\",\n      \"HTTP, UDP, IP, Ethernet\",\n      \"DNS, HTTP, IP, Ethernet\",\n      \"HTTP, TCP, IP, Ethernet\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"HTTP, TCP, IP, Ethernet\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Tầng nào trong mô hình OSI chịu trách nhiệm truyền dữ liệu đáng tin cậy qua mạng?\",\n    \"answers\": [\n      \"Tầng phiên\",\n      \"Tầng giao vận\",\n      \"Tầng mạng\",\n      \"Tầng liên kết dữ liệu\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tầng giao vận\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Câu nào sau đây mô tả KHÔNG chính xác về chức năng của Web Proxy ?\",\n    \"answers\": [\n      \"Web Proxy có thể giúp cải thiện quyền riêng tư bằng cách ẩn địa chỉ IP của người dùng.\",\n      \"Web Proxy có thể giúp phân phối các yêu cầu của khách hàng trên nhiều máy chủ, hỗ trợ cân bằng tải\",\n      \"Web Proxy thiết lập kết nối trực tiếp giữa máy khách và máy chủ.\",\n      \"Web Proxy có tính năng lưu vào bộ nhớ đệm nội dung trang web đã duyệt để tiết kiệm băng thông.\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Web Proxy thiết lập kết nối trực tiếp giữa máy khách và máy chủ.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Quá trình mà máy chủ DHCP gửi thông tin cấu hình mạng cho máy khách được gọi là:\",\n    \"answers\": [\n      \"DHCP Request\",\n      \"DHCP Offer\",\n      \"DHCP Discovery\",\n      \"DHCP Acknowledgement\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"DHCP Offer\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Gói tin nào sau đây không thuộc quy trình bắt tay ba bước khi thiết lập kết nối TCP?\",\n    \"answers\": [\n      \"SYN\",\n      \"FIN\",\n      \"SYN/ACK\",\n      \"ACK\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"FIN\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Khi NAT che giấu IP nguồn của thiết bị gửi ban đầu, điều này được gọi là:\",\n    \"answers\": [\n      \"Masquerading\",\n      \"Routing\",\n      \"Port Forwarding\",\n      \"Switching\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Masquerading\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào trong phần đầu gói tin TCP được dùng để đảm bảo dữ liệu được tập hợp lại theo đúng thứ tự?\",\n    \"answers\": [\n      \"Sequence Number\",\n      \"Source Port\",\n      \"Window Size\",\n      \"Checksum\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Sequence Number\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Máy chủ nào liên lạc với các máy chủ DNS khác để trả lời DNS query gửi bởi local host?\",\n    \"answers\": [\n      \"DNS root servers\",\n      \"Local DNS server\",\n      \"Top Level Domain (TLD) servers\",\n      \"Authoritative DNS server\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Local DNS server\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Bộ định tuyến hoạt động ở tầng nào trong mô hình năm tầng TCP/IP?\",\n    \"answers\": [\n      \"Tầng ứng dụng\",\n      \"Tầng mạng\",\n      \"Tầng giao vận\",\n      \"Tầng liên kết dữ liệu\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tầng mạng\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức lớp ứng dụng nào được sử dụng để gửi thư giữa các máy chủ email?\",\n    \"answers\": [\n      \"SNMP\",\n      \"POP\",\n      \"SMTP\",\n      \"IMAP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"SMTP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Ethernet và một số công nghệ không dây hoạt động ở tầng nào?\",\n    \"answers\": [\n      \"Tầng vật lý\",\n      \"Tầng liên kết dữ liệu\",\n      \"Tầng mạng\",\n      \"Tầng giao vận\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Tầng liên kết dữ liệu\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Một máy chủ web đang sẵn sàng nhận yêu cầu từ trình duyệt. Trạng thái socket của TCP tương ứng là:\",\n    \"answers\": [\n      \"FIN_WAIT\",\n      \"CLOSE_WAIT\",\n      \"FINISHED\",\n      \"LISTEN\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"LISTEN\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thiết bị nào đặt ở vùng biên của các mạng, có khả năng quyết định việc các gói tin có thể đi qua nó dựa trên các thông tin như địa chỉ IP, số hiệu cổng, giao thức, và các thuộc tính khác của gói tin?\",\n    \"answers\": [\n      \"Server\",\n      \"Firewall\",\n      \"Router\",\n      \"Switching Hub\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Firewall\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức của tầng mạng (tầng 3 trong mô hình TCP/IP năm tầng) là giao thức nào?\",\n    \"answers\": [\n      \"UDP\",\n      \"Mạng Ethernet\",\n      \"IP\",\n      \"TCP\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"IP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Vai trò chính của dịch vụ DNS trên Internet là gì?\",\n    \"answers\": [\n      \"Cung cấp dịch vụ ánh xạ tên miền thành địa chỉ IP\",\n      \"Chuyển đổi số nhị phân thành tên miền\",\n      \"Phân phối nội dung web trên toàn cầu\",\n      \"Quản lý các gói dữ liệu trong mạng\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Cung cấp dịch vụ ánh xạ tên miền thành địa chỉ IP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Trách nhiệm chính của các máy chủ Authoritative DNS Server trong hệ thống phân cấp DNS là gì?\",\n    \"answers\": [\n      \"Để quản lý và trả lời các truy vấn cho một tên miền cụ thể mà nó quản lý\",\n      \"Để định tuyến lưu lượng giữa các máy chủ DNS khác nhau\",\n      \"Để tạo tên miền cấp cao nhất (Top Level Domain) mới\",\n      \"Để cung cấp địa chỉ IP cho bất kỳ tên miền nào được truy vấn\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Để quản lý và trả lời các truy vấn cho một tên miền cụ thể mà nó quản lý\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào sau đây SAI về vai trò và hoạt động của thiết bị tường lửa (firewall) trong an ninh mạng?\",\n    \"answers\": [\n      \"Tường lửa lọc lưu lượng truy cập đến và đi dựa trên các quy tắc bảo mật được xác định trước\",\n      \"Tường lửa có thể được cấu hình để chặn các địa chỉ IP và cổng cụ thể\",\n      \"Tường lửa có thể thực hiện chức năng chuyển đổi địa chỉ (NAT) để ẩn địa chỉ IP nội bộ\",\n      \"Tường lửa thay thế nhu cầu về phần mềm chống vi-rút\"\n    ],\n    \"correctIndex\": 0,\n    \"correctText\": \"Tường lửa lọc lưu lượng truy cập đến và đi dựa trên các quy tắc bảo mật được xác định trước\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Quá trình sử dụng DNS để chuyển tên miền thành địa chỉ IP được gọi là:\",\n    \"answers\": [\n      \"IP addresses\",\n      \"Name resolution\",\n      \"ARP table lookup\",\n      \"DNS server\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"Name resolution\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Giao thức nào được sử dụng để gán địa chỉ IP tạm thời cho máy tính?\",\n    \"answers\": [\n      \"ICMP\",\n      \"DHCP\",\n      \"ARP\",\n      \"Không có câu nào ở trên\"\n    ],\n    \"correctIndex\": 1,\n    \"correctText\": \"DHCP\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Hình dưới biểu diễn kích thước cửa sổ cwnd theo thời gian khi triển khai giao thức TCP Reno. Hãy cho biết những giai đoạn truyền nào nằm trong giai đoạn TCP tránh tắc nghẽn (congestion avoidance) hoạt động?\",\n    \"answers\": [\n      \"AB và BC\",\n      \"AB và FG\",\n      \"DE và FG\",\n      \"BC và DE\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"BC và DE\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Đặc điểm của UDP socket là gì?\",\n    \"answers\": [\n      \"Máy chủ thực hiện phương thức accept() với kiểu socket này\",\n      \"Cung cấp truyền tin cậy, có thứ tự byte-stream từ máy khách tới máy chủ.\",\n      \"Máy khách gửi yêu cầu truyền dữ liệu tới máy chủ thông qua phương thức connect()\",\n      \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket của máy chủ.\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket của máy chủ.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Phát biểu nào là đúng về đặc điểm của UDP socket?\",\n    \"answers\": [\n      \"Máy chủ tạo kết nối và thực hiện phương thức accept() với kiểu socket này\",\n      \"Cung cấp dịch vụ truyền tin cậy, có thứ tự byte-stream từ máy khách tới máy chủ.\",\n      \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket.\",\n      \"Máy khách gửi yêu cầu truyền dữ liệu tới máy chủ thông qua phương thức connect()\"\n    ],\n    \"correctIndex\": 2,\n    \"correctText\": \"Dữ liệu từ các máy khách khác nhau có thể được nhận trên cùng một socket.\"\n  },\n  {\n    \"type\": \"mcq\",\n    \"question\": \"Thành phần nào hoạt động ở tầng ứng dụng (tầng 5 trong mô hình TCP/IP năm tầng)?\",\n    \"answers\": [\n      \"UDP\",\n      \"Cáp Ethernet\",\n      \"Bộ định tuyến\",\n      \"Trình duyệt\"\n    ],\n    \"correctIndex\": 3,\n    \"correctText\": \"Trình duyệt\"\n  }\n]";
+        const db = JSON.parse(quizData);
+        
+        document.getElementById('db-size').innerText = db.length;
+
+        let currentMode = '';
+        let currentQIndex = 0;
+        let score = 0;
+        let questions = [];
+        let errors = [];
+        let hasAnsweredCurrent = false;
+        let selectedOptionIndex = -1;
+
+        function shuffle(array) {
+            let currentIndex = array.length,  randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function goHome() {
+            showScreen('screen-home');
+        }
+
+        function startMode(mode) {
+            currentMode = mode;
+            if (mode === 'flashcard') {
+                renderFullReview();
+                showScreen('screen-review');
+                return;
+            }
+
+            questions = [...db];
+            if (mode === 'test') {
+                shuffle(questions);
+                if (questions.length > 50) questions = questions.slice(0, 50);
+            }
+            
+            currentQIndex = 0;
+            score = 0;
+            errors = [];
+            document.getElementById('q-mode').innerText = 'Mode: ' + (mode === 'learn' ? 'Learn' : 'Test');
+            
+            renderQuestion();
+            showScreen('screen-quiz');
+        }
+
+        function renderQuestion() {
+            hasAnsweredCurrent = false;
+            selectedOptionIndex = -1;
+            const q = questions[currentQIndex];
+            
+            document.getElementById('q-counter').innerText = `Question ${currentQIndex + 1} of ${questions.length}`;
+            document.getElementById('progress-fill').style.width = `${((currentQIndex) / questions.length) * 100}%`;
+            
+            document.getElementById('question-text').innerText = q.question;
+            
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            
+            const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+            
+            q.answers.forEach((ans, idx) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'option';
+                
+                const letterSpan = document.createElement('span');
+                letterSpan.className = 'letter';
+                letterSpan.innerText = letters[idx] || '-';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'text';
+                textSpan.innerText = ans;
+
+                optDiv.appendChild(letterSpan);
+                optDiv.appendChild(document.createTextNode(' '));
+                optDiv.appendChild(textSpan);
+
+                optDiv.onclick = () => selectOption(idx);
+                optsContainer.appendChild(optDiv);
+            });
+
+            document.getElementById('btn-next').classList.add('hide');
+            document.getElementById('btn-submit').classList.add('hide');
+        }
+
+        function selectOption(idx) {
+            if (currentMode === 'learn' && hasAnsweredCurrent) return;
+            
+            selectedOptionIndex = idx;
+            const opts = document.querySelectorAll('.option');
+            opts.forEach(opt => opt.classList.remove('selected'));
+            opts[idx].classList.add('selected');
+
+            if (currentMode === 'learn') {
+                hasAnsweredCurrent = true;
+                const q = questions[currentQIndex];
+                
+                if (idx === q.correctIndex) {
+                    opts[idx].classList.add('correct');
+                    score++;
+                } else {
+                    opts[idx].classList.add('wrong');
+                    opts[q.correctIndex].classList.add('correct');
+                    errors.push({ q: q.question, yourAns: q.answers[idx], correctAns: q.answers[q.correctIndex] });
+                }
+                
+                if (currentQIndex < questions.length - 1) {
+                    document.getElementById('btn-next').classList.remove('hide');
+                } else {
+                    document.getElementById('btn-submit').classList.remove('hide');
+                }
+            } else {
+                if (currentQIndex < questions.length - 1) {
+                    document.getElementById('btn-next').classList.remove('hide');
+                } else {
+                    document.getElementById('btn-submit').classList.remove('hide');
+                }
+            }
+        }
+
+        function nextQuestion() {
+            if (currentMode === 'test') {
+                const q = questions[currentQIndex];
+                if (selectedOptionIndex === q.correctIndex) {
+                    score++;
+                } else {
+                    errors.push({ 
+                        q: q.question, 
+                        yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
+                        correctAns: q.answers[q.correctIndex] 
+                    });
+                }
+            }
+            
+            currentQIndex++;
+            renderQuestion();
+        }
+
+        function submitTest() {
+            if (currentMode === 'test') {
+                const q = questions[currentQIndex];
+                if (selectedOptionIndex === q.correctIndex) {
+                    score++;
+                } else {
+                    errors.push({ 
+                        q: q.question, 
+                        yourAns: selectedOptionIndex === -1 ? '(No answer selected)' : q.answers[selectedOptionIndex], 
+                        correctAns: q.answers[q.correctIndex] 
+                    });
+                }
+            }
+            
+            document.getElementById('progress-fill').style.width = '100%';
+            
+            const pct = Math.round((score / questions.length) * 100);
+            document.getElementById('result-score').innerText = pct + '%';
+            document.getElementById('result-text').innerText = `${score} out of ${questions.length} correct`;
+            
+            const errorList = document.getElementById('error-list');
+            errorList.innerHTML = '';
+            
+            if (errors.length === 0) {
+                errorList.innerHTML = '<div class="review-item" style="text-align:center; padding: 2rem;"><div class="review-q">Perfect score! No errors to review.</div></div>';
+            } else {
+                errors.forEach(err => {
+                    const el = document.createElement('div');
+                    el.className = 'review-item';
+                    
+                    const qDiv = document.createElement('div');
+                    qDiv.className = 'review-q';
+                    qDiv.innerText = err.q;
+
+                    const yourAnsDiv = document.createElement('div');
+                    yourAnsDiv.style.color = 'var(--danger)';
+                    yourAnsDiv.style.marginBottom = '0.5rem';
+                    yourAnsDiv.style.fontWeight = '500';
+                    yourAnsDiv.innerText = 'Your Answer: ' + err.yourAns;
+
+                    const reqAnsDiv = document.createElement('div');
+                    reqAnsDiv.className = 'review-a';
+                    reqAnsDiv.innerText = 'Correct Answer: ' + err.correctAns;
+
+                    el.appendChild(qDiv);
+                    el.appendChild(yourAnsDiv);
+                    el.appendChild(reqAnsDiv);
+                    
+                    errorList.appendChild(el);
+                });
+            }
+            
+            showScreen('screen-result');
+        }
+
+        function renderFullReview() {
+            const list = document.getElementById('full-review-list');
+            list.innerHTML = '';
+            
+            db.forEach((q, i) => {
+                const el = document.createElement('div');
+                el.className = 'review-item';
+                
+                const indexDiv = document.createElement('div');
+                indexDiv.style.color = 'var(--text-muted)';
+                indexDiv.style.marginBottom = '0.5rem';
+                indexDiv.style.fontSize = '0.9rem';
+                indexDiv.style.fontWeight = '500';
+                indexDiv.innerText = 'Question ' + (i + 1);
+
+                const qDiv = document.createElement('div');
+                qDiv.className = 'review-q';
+                qDiv.innerText = q.question;
+
+                const aDiv = document.createElement('div');
+                aDiv.className = 'review-a';
+                aDiv.innerText = q.correctText;
+
+                el.appendChild(indexDiv);
+                el.appendChild(qDiv);
+                el.appendChild(aDiv);
+
+                list.appendChild(el);
+            });
+        }
+
+    </script>
+</body>
+</html>
